@@ -1,41 +1,97 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiGithub, FiTwitter } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { setCookie } from 'cookies-next';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
+  const api = process.env.NEXT_PUBLIC_API_URL;
+  // const cookieStore = await cookies();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In real app, you would call your authentication API
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const response = await fetch(api + "/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      const result = await response.json();
+
       // if (!response.ok) throw new Error('Login failed');
-      
-      // Redirect after successful login
-      router.push('/dashboard');
+      if (!response.ok && !result.status) {
+        toast.error(result.msg || "Login Failed!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      toast.success(result.msg || "Login successful!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      if (!result.data.token) {
+        toast.error("token tidak ada!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      setCookie("kerjainaja_session", result.data?.token, {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 3600,
+        path: '/'
+      });
+
+      // setTimeout(() => {
+      //   router.push("/dashboard");
+      // }, 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +103,9 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center">
-            <h1 className="text-2xl font-bold text-white">Selamat Datang Di Kerjain Aja!</h1>
+            <h1 className="text-2xl font-bold text-white">
+              Selamat Datang Di Kerjain Aja!
+            </h1>
             <p className="text-blue-100 mt-1">Yuk Login Dulu</p>
           </div>
 
@@ -62,7 +120,10 @@ export default function LoginPage() {
             <div className="space-y-4">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email Address
                 </label>
                 <div className="relative">
@@ -83,7 +144,10 @@ export default function LoginPage() {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -92,7 +156,7 @@ export default function LoginPage() {
                   </div>
                   <input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
@@ -118,12 +182,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-2 px-4 rounded-lg font-medium text-white ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} transition-colors`}
+              className={`w-full py-2 px-4 rounded-lg font-medium text-white ${
+                isLoading
+                  ? "bg-blue-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
         </div>
       </div>
     </div>

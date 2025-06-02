@@ -16,26 +16,26 @@ func Login() gin.HandlerFunc {
 		var u model.Login
 
 		if err := ctx.ShouldBindJSON(&u); err != nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, "error", nil, "Failed read request")
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "Failed read request")
 			return
 		}
 
 		var user model.User
-		if err := database.DB.Where("username = ?", u.Username).First(&user).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusNotAcceptable, "error", nil, "Username / Password salah")
+		if err := database.DB.Where("email = ?", u.Email).First(&user).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusNotAcceptable, false, nil, "email / password salah")
 			return
 		}
 
 		// hashed := crypto.HashPassword(u.Password)
 
 		if err := crypto.ValidatePassword(user.Password, u.Password); err != nil {
-			helpers.ResponseJson(ctx, http.StatusNotAcceptable, "error", nil, "Username / Password salah")
+			helpers.ResponseJson(ctx, http.StatusNotAcceptable, false, nil, "email / password salah")
 			return
 		}
 
 		tokenJwt, err := helpers.CreateTokenSession(user.ID, user.Username, user.Role, time.Now().Add(24*time.Hour))
 		if err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, "error", nil, "Gagal membuat token jwt : "+err.Error())
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "Gagal membuat token jwt : "+err.Error())
 			return
 		}
 
@@ -43,7 +43,7 @@ func Login() gin.HandlerFunc {
 			"token": tokenJwt,
 		}
 
-		helpers.ResponseJson(ctx, http.StatusOK, "success", data, "Sukses login!")
+		helpers.ResponseJson(ctx, http.StatusOK, true, data, "Sukses login!")
 	}
 }
 
@@ -52,18 +52,18 @@ func Register() gin.HandlerFunc {
 		var reg model.Register
 
 		if err := ctx.ShouldBindJSON(&reg); err != nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, "error", nil, err.Error())
+			helpers.ResponseJson(ctx, http.StatusBadRequest, true, nil, err.Error())
 			return
 		}
 
 		var user model.User
 		if err := database.DB.Where("email = ?", reg.Email).First(&user).Error; err == nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, "error", nil, "email already registered")
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "email already registered")
 			return
 		}
 
 		if err := database.DB.Where("username = ?", reg.Username).First(&user).Error; err == nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, "error", nil, "username already registered")
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "username already registered")
 			return
 		}
 
@@ -77,10 +77,10 @@ func Register() gin.HandlerFunc {
 		}
 
 		if err := database.DB.Create(&newUser).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, "error", nil, "internal server error failed create user")
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "internal server error failed create user")
 			return
 		}
 
-		helpers.ResponseJson(ctx, http.StatusOK, "success", nil, "Success register")
+		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "Success register")
 	}
 }
