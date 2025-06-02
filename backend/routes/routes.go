@@ -14,5 +14,6 @@ func MapRoutes(routes *gin.Engine) {
 			helpers.ResponseJson(ctx, 200, "success", nil, "api is up!")
 		})
 		api.POST("/login", handlers.Login())
+		api.POST("/register", handlers.Register())
 	}
 }
