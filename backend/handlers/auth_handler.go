@@ -63,7 +63,7 @@ func Register() gin.HandlerFunc {
 		var reg model.Register
 
 		if err := ctx.ShouldBindJSON(&reg); err != nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, true, nil, err.Error())
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, err.Error())
 			return
 		}
 

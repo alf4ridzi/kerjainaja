@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"kerjainaja/config"
 	"time"
 
@@ -22,4 +23,24 @@ func CreateTokenSession(id uint, username string, role string, expired time.Time
 	}
 
 	return createToken(claims)
+}
+
+func ParseAndValidateToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.Env("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("token is invalid")
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("token is invalid")
 }
