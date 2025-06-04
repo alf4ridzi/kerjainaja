@@ -20,6 +20,17 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
+		session, err := ctx.Cookie("kerjainaja_session")
+		if err == nil {
+			helpers.ResponseJson(ctx, http.StatusOK, true, nil, "sudah login")
+			return
+		}
+
+		if session != "" {
+			helpers.ResponseJson(ctx, http.StatusOK, true, nil, "sudah login")
+			return
+		}
+
 		var user model.User
 		if err := database.DB.Where("email = ?", u.Email).First(&user).Error; err != nil {
 			helpers.ResponseJson(ctx, http.StatusNotAcceptable, false, nil, "email / password salah")

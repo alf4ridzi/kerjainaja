@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
-import { setCookie } from 'cookies-next';
+import { setCookie } from "cookies-next";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -72,11 +72,13 @@ export default function LoginPage() {
         return;
       }
 
-      setCookie("kerjainaja_session", result.data?.token, {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 3600,
-        path: '/'
-      });
+      if (result && result.data && result.data.token) {
+        setCookie("kerjainaja_session", result.data?.token, {
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 3600,
+          path: "/",
+        });
+      }
 
       // setTimeout(() => {
       //   router.push("/dashboard");
