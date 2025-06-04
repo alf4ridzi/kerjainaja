@@ -68,13 +68,15 @@ func Register() gin.HandlerFunc {
 		}
 
 		var user model.User
-		if err := database.DB.Where("email = ?", reg.Email).First(&user).Error; err == nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "email already registered")
-			return
-		}
-
-		if err := database.DB.Where("username = ?", reg.Username).First(&user).Error; err == nil {
-			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "username already registered")
+		if err := database.DB.Where("email = ? OR username = ?", reg.Email, reg.Username).First(&user).Error; err == nil {
+			switch {
+			case user.Email == reg.Email:
+				helpers.ResponseJson(ctx, http.StatusConflict, false, nil, "email sudah terdaftar")
+			case user.Username == reg.Username:
+				helpers.ResponseJson(ctx, http.StatusConflict, false, nil, "username sudah terdaftar")
+			default:
+				helpers.ResponseJson(ctx, http.StatusConflict, false, nil, "email atau username sudah terdaftar")
+			}
 			return
 		}
 
