@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
-import { setCookie } from "cookies-next";
+import { getCookie, setCookie } from "@/server/serverCookies";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const api = process.env.NEXT_PUBLIC_API_URL;
-  // const cookieStore = await cookies();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +25,19 @@ export default function LoginPage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      const headers: Record<string, string> = {};
+
+      const token = await getCookie("kerjain_session")
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+
+      headers["Content-Type"] = "application/json";
+
       const response = await fetch(api + "/login", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({
           email: email,
           password: password,
@@ -73,11 +81,7 @@ export default function LoginPage() {
       }
 
       if (result && result.data && result.data.token) {
-        setCookie("kerjainaja_session", result.data?.token, {
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 3600,
-          path: "/",
-        });
+        setCookie("kerjain_session", result.data.token);
       }
 
       // setTimeout(() => {

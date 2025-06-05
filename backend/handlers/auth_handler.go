@@ -21,6 +21,7 @@ func Login() gin.HandlerFunc {
 		}
 
 		tokenHeader := ctx.Request.Header.Get("Authorization")
+
 		if tokenHeader != "" {
 			tokenHeader = tokenHeader[len("Bearer "):]
 			_, err := helpers.ParseAndValidateToken(tokenHeader)
@@ -43,7 +44,7 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		tokenJwt, err := helpers.CreateTokenSession(user.ID, user.Username, user.Role, time.Now().Add(24*time.Hour))
+		tokenJwt, err := helpers.CreateTokenSession(user.ID, user.Username, user.Role, time.Now().Add(15*time.Minute))
 		if err != nil {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "Gagal membuat token jwt : "+err.Error())
 			return

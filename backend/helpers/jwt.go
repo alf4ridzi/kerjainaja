@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"kerjainaja/config"
 	"time"
@@ -31,6 +32,10 @@ func ParseAndValidateToken(tokenString string) (jwt.MapClaims, error) {
 	})
 
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, fmt.Errorf("token is expired")
+		}
+
 		return nil, err
 	}
 
