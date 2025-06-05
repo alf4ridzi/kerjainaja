@@ -20,15 +20,14 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		session, err := ctx.Cookie("kerjainaja_session")
-		if err == nil {
-			helpers.ResponseJson(ctx, http.StatusOK, true, nil, "sudah login")
-			return
-		}
-
-		if session != "" {
-			helpers.ResponseJson(ctx, http.StatusOK, true, nil, "sudah login")
-			return
+		tokenHeader := ctx.Request.Header.Get("Authorization")
+		if tokenHeader != "" {
+			tokenHeader = tokenHeader[len("Bearer "):]
+			_, err := helpers.ParseAndValidateToken(tokenHeader)
+			if err == nil {
+				helpers.ResponseJson(ctx, http.StatusOK, true, nil, "sudah login")
+				return
+			}
 		}
 
 		var user model.User
