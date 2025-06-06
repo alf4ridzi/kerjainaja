@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       const headers: Record<string, string> = {};
 
-      const token = await getCookie("kerjain_session")
+      const token = await getCookie("kerjainaja_session")
       if (token) {
         headers["Authorization"] = `Bearer ${token}`
       }
@@ -59,6 +59,8 @@ export default function LoginPage() {
         return;
       }
 
+      const tokenJwt = result?.data?.token;
+
       toast.success(result.msg || "Login successful!", {
         position: "top-right",
         autoClose: 3000,
@@ -68,7 +70,7 @@ export default function LoginPage() {
         draggable: true,
       });
 
-      if (!result.data.token) {
+      if (!tokenJwt && !token) {
         toast.error("token tidak ada!", {
           position: "top-right",
           autoClose: 3000,
@@ -80,8 +82,8 @@ export default function LoginPage() {
         return;
       }
 
-      if (result && result.data && result.data.token) {
-        setCookie("kerjain_session", result.data.token);
+      if (tokenJwt) {
+        setCookie("kerjainaja_session", tokenJwt, {});
       }
 
       // setTimeout(() => {
