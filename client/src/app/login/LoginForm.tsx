@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
-import { getCookie, setCookie } from "@/server/serverCookies";
-import { Metadata } from "next";
-
+import { setCookie, getCookie } from "@/server/serverCookies";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -15,8 +13,8 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  // const router = useRouter();
+  const API = process.env.NEXT_PUBLIC_API_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,19 +22,19 @@ export default function LoginForm() {
     setError("");
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const headers: Record<string, string> = {};
 
       const token = await getCookie("kerjainaja_session");
+
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
       headers["Content-Type"] = "application/json";
 
-      const response = await fetch(api + "/login", {
+      const response = await fetch(`${API}/login`, {
         method: "POST",
         credentials: "include",
         headers: headers,
@@ -71,18 +69,6 @@ export default function LoginForm() {
         pauseOnHover: true,
         draggable: true,
       });
-
-      if (!tokenJwt && !token) {
-        toast.error("token tidak ada!", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-        return;
-      }
 
       if (tokenJwt) {
         setCookie("kerjainaja_session", tokenJwt, {});
