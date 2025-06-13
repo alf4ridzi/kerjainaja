@@ -27,5 +27,7 @@ func MapRoutes(routes *gin.Engine) {
 		api.POST("/login", handlers.Login())
 		api.POST("/register", handlers.Register())
 		api.GET("/users", handlers.GetUsers())
+		api.GET("/boards", handlers.GetBoard())
+		api.POST("/board", handlers.CreateBoard())
 	}
 }

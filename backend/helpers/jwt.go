@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func createToken(claim jwt.MapClaims) (string, error) {
@@ -15,7 +16,7 @@ func createToken(claim jwt.MapClaims) (string, error) {
 	return tokenString, err
 }
 
-func CreateTokenSession(id uint, username string, role string, expired time.Time) (string, error) {
+func CreateTokenSession(id uuid.UUID, username string, role string, expired time.Time) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":      id,
 		"username": username,

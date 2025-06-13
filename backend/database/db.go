@@ -28,5 +28,5 @@ func InitDB() {
 
 	DB = db
 
-	DB.AutoMigrate(&model.User{})
+	DB.AutoMigrate(&model.User{}, &model.Board{}, &model.Column{}, &model.Card{})
 }
