@@ -7,11 +7,48 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func CreateBoard() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		var req model.CreateBoard
 
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "Failed request")
+			return
+		}
+
+		var members []model.User
+		for _, id := range req.MembersID {
+			parsedID, err := uuid.Parse(id)
+			if err != nil {
+				helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "invalid UUID : "+id)
+				return
+			}
+
+			var user model.User
+			if err := database.DB.First(&user, "id = ?", parsedID).Error; err != nil {
+				helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "user is not found : "+id)
+				return
+			}
+
+			members = append(members, user)
+		}
+
+		board := model.Board{
+			Name:    req.Name,
+			Members: members,
+		}
+
+		// TODO: anjing databaseny ga bener kkampret ga ke save ke boards bangsat tai anjing
+
+		// if err := database.DB.Create(&board).Error; err != nil {
+		// 	helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to create board")
+		// 	return
+		// }
+
+		helpers.ResponseJson(ctx, http.StatusOK, true, board, "Success create new board")
 	}
 }
 

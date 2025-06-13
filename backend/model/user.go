@@ -14,8 +14,8 @@ type User struct {
 	Email     string    `gorm:"size:100;not null;uniqueIndex" json:"email"`
 	Password  string    `gorm:"not null" json:"-"`
 	Role      string    `gorm:"size:20;default:user" json:"role"`
-	Boards    []Board   `gorm:"many2many:board_members" json:"boards"`
-	Cards     []Card    `gorm:"many2many:card_members" json:"cards,omitempty"` // optional
+	Boards    []Board   `gorm:"many2many:board_members" json:"boards,omitempty"`
+	Cards     []Card    `gorm:"many2many:card_members" json:"cards,omitempty"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
