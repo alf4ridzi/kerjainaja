@@ -7,6 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type ResponseBoards struct {
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Members []User    `json:"members"`
+	Columns []Column  `json:"columns"`
+}
+
 type Board struct {
 	ID        uuid.UUID `gorm:"type:char(36);primaryKey" json:"id"`
 	Name      string    `gorm:"size:100;not null" json:"name"`

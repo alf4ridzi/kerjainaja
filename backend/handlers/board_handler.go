@@ -37,16 +37,20 @@ func CreateBoard() gin.HandlerFunc {
 		}
 
 		board := model.Board{
-			Name:    req.Name,
-			Members: members,
+			Name: req.Name,
 		}
 
 		// TODO: anjing databaseny ga bener kkampret ga ke save ke boards bangsat tai anjing
 
-		// if err := database.DB.Create(&board).Error; err != nil {
-		// 	helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to create board")
-		// 	return
-		// }
+		if err := database.DB.Create(&board).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to create board")
+			return
+		}
+
+		if err := database.DB.Model(&board).Association("Members").Append(members); err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to association : "+err.Error())
+			return
+		}
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, board, "Success create new board")
 	}
@@ -86,5 +90,32 @@ func GetBoard() gin.HandlerFunc {
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, data, "success get boards")
 
+	}
+}
+
+func GetBoards() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		id := ctx.Param("id")
+
+		parsedID, err := uuid.Parse(id)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "bad ID")
+			return
+		}
+
+		var board model.Board
+		if err := database.DB.Preload("Members").Preload("Columns").First(&board, "id = ?", parsedID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "board not found")
+			return
+		}
+
+		data := model.ResponseBoards{
+			ID:      parsedID,
+			Name:    board.Name,
+			Members: board.Members,
+			Columns: board.Columns,
+		}
+
+		helpers.ResponseJson(ctx, http.StatusOK, true, data, "success get boards")
 	}
 }
