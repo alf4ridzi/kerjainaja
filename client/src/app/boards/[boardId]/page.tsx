@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
 } from "react-beautiful-dnd";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 
 // Types
 type User = {
@@ -54,6 +57,10 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     title: string;
     content: string;
   } | null>(null);
+  const [editingColumn, setEditingColumn] = useState<{
+    id: string | null;
+    name: string;
+  }>({ id: null, name: "" });
 
   const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -184,6 +191,54 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     });
   };
 
+  const handleAddNewColumn = () => {
+    if (!board) return;
+
+    const newColumn: Column = {
+      id: `col-${Date.now()}`,
+      name: "Column Baru",
+      cards: [],
+    };
+
+    setBoard({
+      ...board,
+      columns: [...board.columns, newColumn],
+    });
+  };
+
+  const handleStartEdit = (columnId: string, currentName: string) => {
+    setEditingColumn({ id: columnId, name: currentName });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingColumn.id || !board) return;
+
+    setBoard({
+      ...board,
+      columns: board.columns.map((col) =>
+        col.id === editingColumn.id ? { ...col, name: editingColumn.name } : col
+      ),
+    });
+    setEditingColumn({ id: null, name: "" });
+  };
+
+  const handleDeleteCard = (columnId: string, cardId: string) => {
+    if (!board) return;
+
+    setBoard({
+      ...board,
+      columns: board.columns.map((column) => {
+        if (column.id === columnId) {
+          return {
+            ...column,
+            cards: column.cards.filter((card) => card.id !== cardId),
+          };
+        }
+        return column;
+      }),
+    });
+  };
+
   const handleJoinCard = (cardId: string) => {
     if (!board || !currentUser) return;
 
@@ -211,9 +266,23 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setNewCard({ columnId, title: "", content: "" });
   };
 
-  const handleAddColumn = () => {
+  const handleAddColumn = async () => {
     if (!board) return;
 
+    const response = await fetch(`${API}/column`, {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: "New Column",
+        board_id: `${params.boardId}`
+      })
+    });
+
+    const data = await response.json();
+    // TODO: ini cuy
+    
     const newColumn: Column = {
       id: `col-${Date.now()}`,
       name: "New Column",
@@ -287,33 +356,53 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
   if (board.columns.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">{board.name}</h1>
-          <div className="flex items-center mt-2">
-            <span className="text-sm text-gray-600">Members: </span>
-            {board.members.map((member) => (
-              <span
-                key={member.id}
-                className={`ml-2 text-xs px-2 py-1 rounded-full ${
-                  member.id === currentUser?.id
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-              >
-                {member.name}
-              </span>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gray-50 p-4 flex flex-col items-center justify-center">
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">{board.name}</h1>
+          {board.members.length > 0 && (
+            <div className="flex justify-center mt-3 space-x-2">
+              {board.members.map((member) => (
+                <span
+                  key={member.id}
+                  className={`text-xs px-2.5 py-1 rounded-full ${
+                    member.id === currentUser?.id
+                      ? "bg-blue-50 text-blue-600"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {member.name}
+                </span>
+              ))}
+            </div>
+          )}
         </header>
 
-        <div className="bg-white rounded-lg p-8 text-center">
-          <p className="text-gray-500 text-lg">Tidak ada column</p>
+        <div className="flex flex-col items-center max-w-md text-center">
+          <div className="w-16 h-16 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Belum ada tugas
+          </h3>
+          <p className="text-gray-500 mb-6">Yuk buat kartu baru</p>
           <button
-            onClick={() => handleAddColumn()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={handleAddColumn}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            Tambah Column Pertama
+            + Tambah Column
           </button>
         </div>
       </div>
@@ -342,150 +431,212 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex space-x-4 overflow-x-auto pb-4">
+        <div className="flex flex-col md:flex-row md:overflow-x-auto space-y-4 md:space-y-0 md:space-x-4 pb-4">
           {board.columns.map((column) => (
             <Droppable key={column.id} droppableId={column.id}>
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="w-72 bg-gray-200 rounded-lg p-3 flex flex-col"
-                >
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-semibold text-gray-700">
-                      {column.name}
-                    </h3>
-                    <span className="text-xs bg-gray-300 text-gray-700 px-2 py-1 rounded-full">
-                      {column.cards.length}
-                    </span>
-                  </div>
+              {(provided) => {
+                const cardsEndRef = useRef<HTMLDivElement>(null);
 
-                  <div className="flex-1 space-y-3 min-h-[100px]">
-                    {column.cards.map((card, index) => (
-                      <Draggable
-                        key={card.id}
-                        draggableId={card.id}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="bg-white rounded-lg p-3 shadow hover:shadow-md transition-shadow"
-                          >
-                            <h4 className="font-medium text-gray-800">
-                              {card.title}
-                            </h4>
-                            {card.description && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {card.description}
-                              </p>
-                            )}
-                            {card.dueDate && (
-                              <div className="mt-1">
-                                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                  Due:{" "}
-                                  {new Date(card.dueDate).toLocaleDateString()}
-                                </span>
-                              </div>
-                            )}
+                useEffect(() => {
+                  cardsEndRef.current?.scrollIntoView({ behavior: "auto" });
+                }, [column.cards]);
 
-                            <div className="mt-3 flex items-center justify-between">
-                              <div className="flex items-center space-x-1">
-                                {card.members.map((member) => (
-                                  <span
-                                    key={member.id}
-                                    className={`text-xs px-2 py-1 rounded-full ${
-                                      member.id === currentUser?.id
-                                        ? "bg-blue-100 text-blue-800"
-                                        : "bg-gray-100 text-gray-700"
-                                    }`}
-                                  >
-                                    {member.name.split(" ")[0]}
-                                  </span>
-                                ))}
-                              </div>
-
-                              <button
-                                onClick={() => handleJoinCard(card.id)}
-                                className={`text-xs px-2 py-1 rounded ${
-                                  card.members.some(
-                                    (m) => m.id === currentUser?.id
-                                  )
-                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                    : "bg-green-100 text-green-700 hover:bg-green-200"
-                                }`}
-                              >
-                                {card.members.some(
-                                  (m) => m.id === currentUser?.id
-                                )
-                                  ? "Leave"
-                                  : "Join"}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-
-                    {newCard?.columnId === column.id ? (
-                      <div className="bg-white rounded-lg p-3 shadow">
-                        <input
-                          type="text"
-                          placeholder="Card title"
-                          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                          value={newCard.title}
-                          onChange={(e) =>
-                            setNewCard({
-                              ...newCard,
-                              title: e.target.value,
-                            })
-                          }
-                          autoFocus
-                        />
-                        <textarea
-                          placeholder="Card description"
-                          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={newCard.content}
-                          onChange={(e) =>
-                            setNewCard({
-                              ...newCard,
-                              content: e.target.value,
-                            })
-                          }
-                          rows={3}
-                        />
-                        <div className="mt-2 flex space-x-2">
+                return (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="w-full md:w-72 bg-gray-200 rounded-lg p-3 flex flex-col"
+                    style={{ maxHeight: "calc(100vh - 200px)" }}
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      {editingColumn.id === column.id ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <input
+                            type="text"
+                            value={editingColumn.name}
+                            onChange={(e) =>
+                              setEditingColumn({
+                                ...editingColumn,
+                                name: e.target.value,
+                              })
+                            }
+                            className="flex-1 px-2 py-1 border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                            autoFocus
+                          />
                           <button
-                            onClick={handleCreateCard}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                            disabled={!newCard.title.trim()}
+                            onClick={handleSaveEdit}
+                            className="text-green-500 hover:text-green-700 transition-colors"
                           >
-                            Add Card
-                          </button>
-                          <button
-                            onClick={() => setNewCard(null)}
-                            className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
-                          >
-                            Cancel
+                            <FontAwesomeIcon icon={faCheck} />
                           </button>
                         </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleAddCard(column.id)}
-                        className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                      >
-                        + Add a card
-                      </button>
-                    )}
+                      ) : (
+                        <>
+                          <h3
+                            className="font-semibold text-gray-700 cursor-text flex-1"
+                            onClick={() =>
+                              handleStartEdit(column.id, column.name)
+                            }
+                          >
+                            {column.name}
+                          </h3>
+                          <span className="text-xs bg-gray-300 text-gray-700 px-2 py-1 rounded-full">
+                            {column.cards.length}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex-1 space-y-3 min-h-[100px] overflow-y-auto">
+                      {column.cards.map((card, index) => (
+                        <Draggable
+                          key={card.id}
+                          draggableId={card.id}
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-white rounded-lg p-3 shadow hover:shadow-md transition-shadow relative"
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCard(column.id, card.id);
+                                }}
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 text-white p-1 rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+                                aria-label="Delete card"
+                              >
+                                <FontAwesomeIcon
+                                  icon={faTimes}
+                                  className="text-xs"
+                                />
+                              </button>
+                              <h4 className="font-medium text-gray-800 pr-6">
+                                {card.title}
+                              </h4>
+                              {card.description && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {card.description}
+                                </p>
+                              )}
+                              {card.dueDate && (
+                                <div className="mt-1">
+                                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                    Due:{" "}
+                                    {new Date(
+                                      card.dueDate
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="mt-3 flex items-center justify-between">
+                                <div className="flex items-center space-x-1">
+                                  {card.members.map((member) => (
+                                    <span
+                                      key={member.id}
+                                      className={`text-xs px-2 py-1 rounded-full ${
+                                        member.id === currentUser?.id
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-gray-100 text-gray-700"
+                                      }`}
+                                    >
+                                      {member.name.split(" ")[0]}
+                                    </span>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => handleJoinCard(card.id)}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    card.members.some(
+                                      (m) => m.id === currentUser?.id
+                                    )
+                                      ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                      : "bg-green-100 text-green-700 hover:bg-green-200"
+                                  }`}
+                                >
+                                  {card.members.some(
+                                    (m) => m.id === currentUser?.id
+                                  )
+                                    ? "Leave"
+                                    : "Join"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                      <div ref={cardsEndRef} />
+
+                      {newCard?.columnId === column.id ? (
+                        <div className="bg-white rounded-lg p-3 shadow">
+                          <input
+                            type="text"
+                            placeholder="Card title"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                            value={newCard.title}
+                            onChange={(e) =>
+                              setNewCard({
+                                ...newCard,
+                                title: e.target.value,
+                              })
+                            }
+                            autoFocus
+                          />
+                          <textarea
+                            placeholder="Card description"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={newCard.content}
+                            onChange={(e) =>
+                              setNewCard({
+                                ...newCard,
+                                content: e.target.value,
+                              })
+                            }
+                            rows={3}
+                          />
+                          <div className="mt-2 flex space-x-2">
+                            <button
+                              onClick={handleCreateCard}
+                              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                              disabled={!newCard.title.trim()}
+                            >
+                              Add Card
+                            </button>
+                            <button
+                              onClick={() => setNewCard(null)}
+                              className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleAddCard(column.id)}
+                          className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        >
+                          + Add a card
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              }}
             </Droppable>
           ))}
+          <div className="w-10 h-10 ml-2">
+            <button
+              onClick={handleAddNewColumn}
+              className="w-full h-full flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors shadow-md"
+              title="Add column"
+            >
+              <FontAwesomeIcon icon={faPlus} className="text-sm" />
+            </button>
+          </div>
         </div>
       </DragDropContext>
     </div>
