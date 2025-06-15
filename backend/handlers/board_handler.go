@@ -19,21 +19,26 @@ func CreateBoard() gin.HandlerFunc {
 			return
 		}
 
-		var members []model.User
-		for _, id := range req.MembersID {
-			parsedID, err := uuid.Parse(id)
-			if err != nil {
-				helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "invalid UUID : "+id)
-				return
-			}
+		tokenHeader := ctx.Request.Header.Get("Authorization")
+		if tokenHeader == "" {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, "access denied")
+			return
+		}
 
-			var user model.User
-			if err := database.DB.First(&user, "id = ?", parsedID).Error; err != nil {
-				helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "user is not found : "+id)
-				return
-			}
+		token := tokenHeader[len("Bearer "):]
 
-			members = append(members, user)
+		claims, err := helpers.ParseAndValidateToken(token)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, err.Error())
+			return
+		}
+
+		userID := claims["sub"]
+
+		var user model.User
+		if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, "user is not found")
+			return
 		}
 
 		board := model.Board{
@@ -47,7 +52,7 @@ func CreateBoard() gin.HandlerFunc {
 			return
 		}
 
-		if err := database.DB.Model(&board).Association("Members").Append(members); err != nil {
+		if err := database.DB.Model(&board).Association("Members").Append(&user); err != nil {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to association : "+err.Error())
 			return
 		}
@@ -104,7 +109,11 @@ func GetBoards() gin.HandlerFunc {
 		}
 
 		var board model.Board
-		if err := database.DB.Preload("Members").Preload("Columns").First(&board, "id = ?", parsedID).Error; err != nil {
+		if err := database.DB.
+			Preload("Members").
+			Preload("Columns.Cards").
+			Preload("Columns.Cards.Members").
+			First(&board, "id = ?", parsedID).Error; err != nil {
 			helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "board not found")
 			return
 		}

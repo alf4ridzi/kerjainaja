@@ -10,6 +10,9 @@ import {
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { getCookie } from "@/server/serverCookies";
 
 // Types
 type User = {
@@ -191,35 +194,136 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     });
   };
 
-  const handleAddNewColumn = () => {
+  const handleAddNewColumn = async () => {
     if (!board) return;
 
-    const newColumn: Column = {
-      id: `col-${Date.now()}`,
-      name: "Column Baru",
-      cards: [],
-    };
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API}/column`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "New Column",
+          board_id: `${params.boardId}`,
+        }),
+        credentials: "include",
+      });
 
-    setBoard({
-      ...board,
-      columns: [...board.columns, newColumn],
-    });
+      const result = await response.json();
+      // TODO: ini cuy
+
+      if (!response.ok || !result.status) {
+        toast.error(result.msg || "Failed to add column", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      if (!result?.data) {
+        toast.error(result.msg || "No column information", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      const newColumn: Column = {
+        id: result.data.id,
+        name: result.data.name,
+        cards: [],
+      };
+
+      setBoard({
+        ...board,
+        columns: [...board.columns, newColumn],
+      });
+    } catch (error) {
+      toast.error("something is error", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartEdit = (columnId: string, currentName: string) => {
     setEditingColumn({ id: columnId, name: currentName });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingColumn.id || !board) return;
 
-    setBoard({
-      ...board,
-      columns: board.columns.map((col) =>
-        col.id === editingColumn.id ? { ...col, name: editingColumn.name } : col
-      ),
-    });
-    setEditingColumn({ id: null, name: "" });
+    try {
+      setIsLoading(true);
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      const token = await getCookie("kerjainaja_session");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API}/column/${editingColumn.id}`, {
+        headers: headers,
+        method: "PUT",
+        body: JSON.stringify({
+          name: editingColumn.name,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.status) {
+        toast.error(result.msg || "Failed to change title", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+
+      setBoard({
+        ...board,
+        columns: board.columns.map((col) =>
+          col.id === editingColumn.id
+            ? { ...col, name: editingColumn.name }
+            : col
+        ),
+      });
+      setEditingColumn({ id: null, name: "" });
+    } catch (error) {
+      toast.error(`${error}`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
@@ -264,35 +368,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
   const handleAddCard = (columnId: string) => {
     setNewCard({ columnId, title: "", content: "" });
-  };
-
-  const handleAddColumn = async () => {
-    if (!board) return;
-
-    const response = await fetch(`${API}/column`, {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: "New Column",
-        board_id: `${params.boardId}`
-      })
-    });
-
-    const data = await response.json();
-    // TODO: ini cuy
-    
-    const newColumn: Column = {
-      id: `col-${Date.now()}`,
-      name: "New Column",
-      cards: [],
-    };
-
-    setBoard({
-      ...board,
-      columns: [...board.columns, newColumn],
-    });
   };
 
   const handleCreateCard = () => {
@@ -399,7 +474,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           </h3>
           <p className="text-gray-500 mb-6">Yuk buat kartu baru</p>
           <button
-            onClick={handleAddColumn}
+            onClick={handleAddNewColumn}
             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             + Tambah Column
