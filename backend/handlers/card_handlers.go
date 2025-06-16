@@ -64,6 +64,6 @@ func CreateNewCard() gin.HandlerFunc {
 			return
 		}
 
-		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success create new card")
+		helpers.ResponseJson(ctx, http.StatusOK, true, newCard, "success create new card")
 	}
 }

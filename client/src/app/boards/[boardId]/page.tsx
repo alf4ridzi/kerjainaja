@@ -370,31 +370,74 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     setNewCard({ columnId, title: "", content: "" });
   };
 
-  const handleCreateCard = () => {
+  const handleCreateCard = async () => {
     if (!newCard || !newCard.title.trim() || !board || !currentUser) return;
 
-    const newCardItem: Card = {
-      id: `card-${Date.now()}`,
-      title: newCard.title,
-      description: newCard.content,
-      columnId: newCard.columnId,
-      members: [currentUser],
-    };
+    try {
+      setIsLoading(true);
 
-    setBoard({
-      ...board,
-      columns: board.columns.map((column) => {
-        if (column.id === newCard.columnId) {
-          return {
-            ...column,
-            cards: [...column.cards, newCardItem],
-          };
-        }
-        return column;
-      }),
-    });
+      const headers: Record<string, string> = {
+        "Content-Type":"application/json"
+      };
 
-    setNewCard(null);
+      const token = await getCookie("kerjainaja_session");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const body: Record<string, string> = {
+        "title": newCard.title,
+        "description": newCard.content,
+        "column_id": newCard.columnId,
+      }
+
+      const response = await fetch(`${API}/card`, {
+        headers: headers,
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !response.status) {
+        toast.error(result.msg || "Failed to add card", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        return;
+      }
+    
+      const newCardItem: Card = {
+        id: result.data.id,
+        title: result.data.title,
+        description: result.data.description,
+        columnId: result.data.column_id,
+        members: result.data.members,
+      };
+
+      setBoard({
+        ...board,
+        columns: board.columns.map((column) => {
+          if (column.id === newCard.columnId) {
+            return {
+              ...column,
+              cards: [...column.cards, newCardItem],
+            };
+          }
+          return column;
+        }),
+      });
+
+      setNewCard(null);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) {
