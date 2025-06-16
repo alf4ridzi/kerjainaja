@@ -73,7 +73,17 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(`${API}/boards/${params.boardId}`);
+        const token = await getCookie("kerjainaja_session");
+        const headers = new Headers();
+        headers.append("Content-Type", "application/json");
+
+        if (token) {
+          headers.append("Authorization", `Bearer ${token}`);
+        }
+
+        const response = await fetch(`${API}/boards/${params.boardId}`, {
+          headers,
+        });
         const data: ApiResponse = await response.json();
 
         if (!response.ok || !data.status || !data.data) {
@@ -85,13 +95,11 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           name: data.data.name || "Untitled Board",
           columns:
             data.data.columns?.map((col) => ({
-              id: col.id || `col-${Math.random().toString(36).substr(2, 9)}`,
+              id: col.id,
               name: col.name || "Unnamed Column",
               cards:
                 col.cards?.map((card) => ({
-                  id:
-                    card.id ||
-                    `card-${Math.random().toString(36).substr(2, 9)}`,
+                  id: card.id,
                   title: card.title || "Untitled Card",
                   description: card.description || "",
                   columnId: card.columnId || col.id,
@@ -104,18 +112,23 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
         setBoard(transformedBoard);
 
-        if (transformedBoard.members.length > 0) {
-          setCurrentUser(transformedBoard.members[0]);
+        if (token) {
+          const userResponse = await fetch(`${API}/users`, { headers });
+          const userData = await userResponse.json();
+
+          if (userResponse.ok && userData.data) {
+            setCurrentUser(userData.data);
+          } else {
+            const userInMembers = transformedBoard.members.find(
+              (member) => member.email === userData.email
+            );
+            setCurrentUser(userInMembers || null);
+          }
         } else {
-          setCurrentUser({
-            id: "user-1",
-            name: "You",
-            email: "user@example.com",
-          });
+          setCurrentUser(null);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-        console.error("Fetch error:", err);
       } finally {
         setIsLoading(false);
       }
@@ -326,44 +339,111 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     }
   };
 
-  const handleDeleteCard = (columnId: string, cardId: string) => {
+  const handleDeleteCard = async (columnId: string, cardId: string) => {
     if (!board) return;
+    try {
+      setIsLoading(true);
 
-    setBoard({
-      ...board,
-      columns: board.columns.map((column) => {
-        if (column.id === columnId) {
-          return {
-            ...column,
-            cards: column.cards.filter((card) => card.id !== cardId),
-          };
-        }
-        return column;
-      }),
-    });
-  };
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
 
-  const handleJoinCard = (cardId: string) => {
-    if (!board || !currentUser) return;
+      const token = await getCookie("kerjainaja_session");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
 
-    setBoard({
-      ...board,
-      columns: board.columns.map((column) => ({
-        ...column,
-        cards: column.cards.map((card) => {
-          if (card.id === cardId) {
-            const isMember = card.members.some((m) => m.id === currentUser.id);
+      const response = await fetch(`${API}/cards/${cardId}`, {
+        headers: headers,
+        method: "DELETE"
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.status) {
+        toast.error(result.msg || "failed to delete card");
+        return;
+      }
+
+      setBoard({
+        ...board,
+        columns: board.columns.map((column) => {
+          if (column.id === columnId) {
             return {
-              ...card,
-              members: isMember
-                ? card.members.filter((m) => m.id !== currentUser.id)
-                : [...card.members, currentUser],
+              ...column,
+              cards: column.cards.filter((card) => card.id !== cardId),
             };
           }
-          return card;
+          return column;
         }),
-      })),
-    });
+      });
+    } catch (error) {
+      toast.error("something wrong");
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleJoinCard = async (cardId: string) => {
+    if (!board || !currentUser) {
+      toast.error("You need to login first");
+      return;
+    }
+
+    try {
+      const token = await getCookie("kerjainaja_session");
+      if (!token) {
+        toast.error("You need to login first");
+        return;
+      }
+      const isMember = board.columns.some((column) =>
+        column.cards.some(
+          (card) =>
+            card.id === cardId &&
+            card.members.some((m) => m.id === currentUser.id)
+        )
+      );
+
+      const response = await fetch(`${API}/cards/${cardId}/members`, {
+        method: isMember ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.status) {
+        toast.error(result.msg || "Failed to update membership");
+        return;
+      }
+
+      setBoard((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          columns: prev.columns.map((column) => ({
+            ...column,
+            cards: column.cards.map((card) => {
+              if (card.id === cardId) {
+                return {
+                  ...card,
+                  members: isMember
+                    ? card.members.filter((m) => m.id !== currentUser.id)
+                    : [...card.members, currentUser],
+                };
+              }
+              return card;
+            }),
+          })),
+        };
+      });
+    } catch (error) {
+      toast.error("Failed to update membership");
+      console.error(error);
+    }
   };
 
   const handleAddCard = (columnId: string) => {
@@ -377,7 +457,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       setIsLoading(true);
 
       const headers: Record<string, string> = {
-        "Content-Type":"application/json"
+        "Content-Type": "application/json",
       };
 
       const token = await getCookie("kerjainaja_session");
@@ -386,12 +466,12 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       }
 
       const body: Record<string, string> = {
-        "title": newCard.title,
-        "description": newCard.content,
-        "column_id": newCard.columnId,
-      }
+        title: newCard.title,
+        description: newCard.content,
+        column_id: newCard.columnId,
+      };
 
-      const response = await fetch(`${API}/card`, {
+      const response = await fetch(`${API}/cards`, {
         headers: headers,
         method: "POST",
         body: JSON.stringify(body),
@@ -410,7 +490,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         });
         return;
       }
-    
+
       const newCardItem: Card = {
         id: result.data.id,
         title: result.data.title,
@@ -624,12 +704,12 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                                   e.stopPropagation();
                                   handleDeleteCard(column.id, card.id);
                                 }}
-                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 text-white p-1 rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
                                 aria-label="Delete card"
                               >
                                 <FontAwesomeIcon
                                   icon={faTimes}
-                                  className="text-xs"
+                                  className="text-sm"
                                 />
                               </button>
                               <h4 className="font-medium text-gray-800 pr-6">
@@ -674,6 +754,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                                       ? "bg-red-100 text-red-700 hover:bg-red-200"
                                       : "bg-green-100 text-green-700 hover:bg-green-200"
                                   }`}
+                                  disabled={!currentUser}
                                 >
                                   {card.members.some(
                                     (m) => m.id === currentUser?.id

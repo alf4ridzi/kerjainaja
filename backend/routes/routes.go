@@ -32,6 +32,10 @@ func MapRoutes(routes *gin.Engine) {
 		api.GET("/boards/:id", handlers.GetBoards())
 		api.POST("/column", handlers.CreateColumn())
 		api.PUT("/column/:id", handlers.EditColumn())
-		api.POST("/card", handlers.CreateNewCard())
+		// cards
+		api.POST("/cards", handlers.CreateNewCard())
+		api.DELETE("/cards/:id", handlers.DeleteCard())
+		api.POST("/cards/:id/members", handlers.JoinCard())
+		api.DELETE("/cards/:id/members", handlers.LeaveCard())
 	}
 }

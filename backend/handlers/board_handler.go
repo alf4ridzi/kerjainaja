@@ -5,6 +5,7 @@ import (
 	"kerjainaja/helpers"
 	"kerjainaja/model"
 	"net/http"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -100,6 +101,32 @@ func GetBoard() gin.HandlerFunc {
 
 func GetBoards() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		tokenHeader := ctx.Request.Header.Get("Authorization")
+		if tokenHeader == "" {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, "Access Denied")
+			return
+		}
+
+		token := tokenHeader[len("Bearer "):]
+		if token == "" {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, "Access Denied")
+			return
+		}
+
+		claims, err := helpers.ParseAndValidateToken(token)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, err.Error())
+			return
+		}
+
+		userID := claims["sub"]
+
+		var user model.User
+		if err := database.DB.Preload("Boards").First(&user, "id = ?", userID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "user not found")
+			return
+		}
+
 		id := ctx.Param("id")
 
 		parsedID, err := uuid.Parse(id)
@@ -116,6 +143,15 @@ func GetBoards() gin.HandlerFunc {
 			First(&board, "id = ?", parsedID).Error; err != nil {
 			helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "board not found")
 			return
+		}
+
+		if !slices.ContainsFunc(board.Members, func(m model.User) bool {
+			return m.ID == user.ID
+		}) {
+			if err := database.DB.Model(&board).Association("Members").Append(&user); err != nil {
+				helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to append user")
+				return
+			}
 		}
 
 		data := model.ResponseBoards{
