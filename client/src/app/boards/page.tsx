@@ -13,6 +13,13 @@ import {
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+type User = {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+};
+
 interface Board {
   id: string;
   name: string;
@@ -33,6 +40,7 @@ interface ApiResponse {
 export default function BoardsPage() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [newBoardName, setNewBoardName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -73,7 +81,33 @@ export default function BoardsPage() {
       }
     };
 
+    const fetchUser = async () => {
+      const token = await getCookie("kerjainaja_session");
+
+      if (!token) {
+        return;
+      }
+
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      };
+
+      const response = await fetch(`${API}/users`, {
+        headers: headers,
+        method: "GET"
+      });
+
+      const userData = await response.json();
+
+      if (response.ok && userData.status) {
+        setCurrentUser(userData.data);
+      }
+
+    };
+
     fetchBoards();
+    fetchUser();
   }, []);
 
   const handleCreateBoard = async () => {
@@ -173,7 +207,7 @@ export default function BoardsPage() {
     return (
       <div className="min-h-screen p-8 flex flex-col items-center justify-center">
         <div className="max-w-md w-full text-center">
-          <h1 className="text-3xl font-bold mb-4">Your Boards</h1>
+          <h1 className="text-3xl font-bold mb-4">{currentUser?.name} Boards</h1>
           <p className="text-gray-600 mb-8">
             No boards found. Create your first board!
           </p>
@@ -252,7 +286,7 @@ export default function BoardsPage() {
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Your Boards</h1>
+          <h1 className="text-3xl font-bold">{currentUser?.name} Boards</h1>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

@@ -4,14 +4,13 @@ import { useState } from "react";
 // import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { setCookie, getCookie } from "@/server/serverCookies";
 import Link from "next/link";
-//import { useRouter } from "next/router";
-import { Redirect } from "next";
-import { redirect } from "next/navigation";
 
-export default function LoginForm() {
+export default function RegisterForm() {
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +28,6 @@ export default function LoginForm() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const headers: Record<string, string> = {};
-
       const token = await getCookie("kerjainaja_session");
 
       if (token) {
@@ -38,21 +36,22 @@ export default function LoginForm() {
 
       headers["Content-Type"] = "application/json";
 
-      const response = await fetch(`${API}/login`, {
+      const response = await fetch(`${API}/register`, {
         method: "POST",
         credentials: "include",
         headers: headers,
         body: JSON.stringify({
-          email: email,
-          password: password,
+          name,
+          username,
+          email,
+          password,
         }),
       });
 
       const result = await response.json();
 
-      // if (!response.ok) throw new Error('Login failed');
       if (!response.ok && !result.status) {
-        toast.error(result.msg || "Login Failed!", {
+        toast.error(result.msg || "Registration Failed!", {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: false,
@@ -65,7 +64,7 @@ export default function LoginForm() {
 
       const tokenJwt = result?.data?.token;
 
-      toast.success(result.msg || "Login successful!", {
+      toast.success(result.msg || "Registration successful!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -78,11 +77,12 @@ export default function LoginForm() {
         setCookie("kerjainaja_session", tokenJwt, {});
       }
 
-      setTimeout(() => {
-        redirect("/boards");
-      }, 3000);
+      // setTimeout(() => {
+      //   router.push("/dashboard");
+      // }, 3000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      const errorMessage =
+        err instanceof Error ? err.message : "Registration failed";
       setError(errorMessage);
       toast.error(errorMessage, {
         position: "top-right",
@@ -107,7 +107,7 @@ export default function LoginForm() {
               <h1 className="text-2xl font-bold text-white">
                 Selamat Datang Di Kerjain Aja!
               </h1>
-              <p className="text-blue-100 mt-1">Yuk Login Dulu</p>
+              <p className="text-blue-100 mt-1">Yuk Daftar Dulu</p>
             </div>
 
             {/* Form */}
@@ -119,6 +119,54 @@ export default function LoginForm() {
               )}
 
               <div className="space-y-4">
+                {/* Name Field */}
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FiUser className="text-gray-400" />
+                    </div>
+                    <input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-10 text-black pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      placeholder="Muhammad Alfaridzi"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Username Field */}
+                <div>
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FiUser className="text-gray-400" />
+                    </div>
+                    <input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full pl-10 text-black pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      placeholder="alfaridzi"
+                      required
+                    />
+                  </div>
+                </div>
+
                 {/* Email Field */}
                 <div>
                   <label
@@ -137,7 +185,7 @@ export default function LoginForm() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-10 text-black pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder="admin@example.com"
+                      placeholder="alfaridzi@example.com"
                       required
                     />
                   </div>
@@ -189,15 +237,15 @@ export default function LoginForm() {
                     : "bg-blue-600 hover:bg-blue-700"
                 } transition-colors`}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Registering..." : "Register"}
               </button>
               <div className="text-center text-sm text-gray-600">
-                Belum ada akun?{" "}
+                Sudah punya akun?{" "}
                 <Link
-                  href="/register"
+                  href="/login"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Register here
+                  Login here
                 </Link>
               </div>
             </form>
