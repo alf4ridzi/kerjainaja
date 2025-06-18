@@ -9,10 +9,16 @@ import {
 } from "react-beautiful-dnd";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPlus,
+  faTimes,
+  faSignOutAlt,
+  faArrowLeft,
+} from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getCookie } from "@/server/serverCookies";
+import { useRouter } from "next/navigation";
 
 // Types
 type User = {
@@ -64,7 +70,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     id: string | null;
     name: string;
   }>({ id: null, name: "" });
-
+  const router = useRouter();
   const API = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
@@ -136,6 +142,34 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
     fetchBoard();
   }, [params.boardId, API]);
+
+  const handleBackToBoards = () => {
+    router.push("/boards");
+  };
+
+  // Handler for leave board
+  const handleLeaveBoard = async () => {
+    try {
+      const token = await getCookie("kerjainaja_session");
+      const response = await fetch(`${API}/boards/${params.boardId}/members`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        router.push("/boards");
+        toast.success("Successfully left the board");
+      } else {
+        throw new Error("Failed to leave board");
+      }
+    } catch (error) {
+      toast.error("Error leaving board");
+      console.error(error);
+    }
+  };
 
   const onDragEnd = (result: DropResult) => {
     if (!board) return;
@@ -355,7 +389,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
       const response = await fetch(`${API}/cards/${cardId}`, {
         headers: headers,
-        method: "DELETE"
+        method: "DELETE",
       });
 
       const result = await response.json();
@@ -625,6 +659,25 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
               {member.name}
             </span>
           ))}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={handleBackToBoards}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            title="Back to all boards"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} className="text-xs" />
+            <span>Boards</span>
+          </button>
+
+          <button
+            onClick={handleLeaveBoard}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-md transition-colors"
+            title="Leave this board"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} className="text-xs" />
+            <span>Leave</span>
+          </button>
         </div>
       </header>
 

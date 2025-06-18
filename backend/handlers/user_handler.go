@@ -38,3 +38,22 @@ func GetUsers() gin.HandlerFunc {
 		helpers.ResponseJson(ctx, http.StatusOK, true, user, "success get account information")
 	}
 }
+
+func Logout() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token, err := ctx.Cookie("kerjainaja_session")
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "no token was found")
+			return
+		}
+
+		if token == "" {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "no token was found")
+			return
+		}
+
+		ctx.SetCookie("kerjainaja_session", "", -1, "/", "localhost", false, true)
+
+		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success logout")
+	}
+}
