@@ -630,12 +630,22 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
             Belum ada tugas
           </h3>
           <p className="text-gray-500 mb-6">Yuk buat kartu baru</p>
-          <button
-            onClick={handleAddNewColumn}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            + Tambah Column
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleAddNewColumn}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              + Tambah Column
+            </button>
+            <button
+              onClick={handleLeaveBoard}
+              className="px-5 py-2.5 flex items-center gap-1.5 px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded-md transition-colors"
+              title="Leave this board"
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} className="text-xs" />
+              <span>Leave</span>
+            </button>
+          </div>
         </div>
       </div>
     );

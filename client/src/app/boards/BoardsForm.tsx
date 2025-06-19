@@ -132,7 +132,7 @@ export default function BoardsForm() {
 
   const handleJoinBoard = () => {
     if (!boardId.trim()) {
-      alert('Please enter a valid board ID');
+      toast.error('Please enter a valid board ID');
       return;
     }
     router.push(`/boards/${boardId.trim()}`);
@@ -167,7 +167,7 @@ export default function BoardsForm() {
 
       toast.success("success logout");
 
-      router.push("/login");
+      router.push("/");
 
     } catch (err) {
       console.log(err);
@@ -287,7 +287,7 @@ export default function BoardsForm() {
           <p className="text-gray-600 mb-8">
             No boards found. Create your first board!
           </p>
-
+  
           {isCreating ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -336,23 +336,63 @@ export default function BoardsForm() {
               </div>
             </motion.div>
           ) : (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setIsCreating(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-            >
-              <FontAwesomeIcon icon={faPlus} />
-              Create Board
-            </motion.button>
+            <div className="flex flex-col gap-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsCreating(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
+              >
+                <FontAwesomeIcon icon={faPlus} />
+                Create Board
+              </motion.button>
+  
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowJoinModal(true)}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 mx-auto"
+              >
+                <FontAwesomeIcon icon={faLink} />
+                Join Board
+              </motion.button>
+            </div>
           )}
-
-          <div className="mt-12">
-            <p className="text-gray-500 mb-4">Or join an existing board:</p>
-            <button className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700">
-              Join Board
-            </button>
-          </div>
+  
+          {/* Join Board Modal */}
+          <Modal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)}>
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Join Existing Board</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Board ID
+                  </label>
+                  <input
+                    type="text"
+                    value={boardId}
+                    onChange={(e) => setBoardId(e.target.value)}
+                    placeholder="Paste board ID here"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowJoinModal(false)}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleJoinBoard}
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md"
+                  >
+                    Join
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Modal>
         </div>
       </div>
     );

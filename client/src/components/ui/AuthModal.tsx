@@ -21,15 +21,16 @@ type AuthModalProps = {
   onTypeChange: (type: "login" | "register") => void;
 };
 
-export default function AuthModal({ 
-  isOpen, 
-  onClose, 
+export default function AuthModal({
+  isOpen,
+  onClose,
   type,
-  onTypeChange
+  onTypeChange,
 }: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -38,52 +39,62 @@ export default function AuthModal({
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     const API = process.env.NEXT_PUBLIC_API_URL;
 
     try {
       const url = type === "login" ? "/login" : "/register";
       const body =
-        type === "login" ? { email, password } : { name, email, password };
+        type === "login"
+          ? { email, password }
+          : { name, username, email, password };
 
-      const headers: Record<string,string> = {
-        "Content-Type": "application/json"
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
       };
 
-      const tokenHeader = await getCookie("kerjainaja_session");
-         
-      if (tokenHeader) {
-        headers["Authorization"] = `Bearer ${tokenHeader}`
+      if (type == "login") {
+        const tokenHeader = await getCookie("kerjainaja_session");
+
+        if (tokenHeader) {
+          headers["Authorization"] = `Bearer ${tokenHeader}`;
+        }
       }
-      
+
+      console.log(email);
       const response = await fetch(`${API}${url}`, {
         method: "POST",
         headers: headers,
         body: JSON.stringify(body),
       });
 
-      
       const data = await response.json();
 
       if (!response.ok || !data.status) {
         throw new Error(data.msg || "Authentication failed");
       }
 
-      const token = data.data?.token;
+      if (type == "login") {
+        const token = data.data?.token;
 
-      if (!token) {
-        toast.error("No token was found");
-        return;
+        if (!token) {
+          toast.error("No token was found");
+          return;
+        }
+
+        setCookie("kerjainaja_session", token, {
+          path: "/",
+        });
+
+        toast.success("Success Login");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        router.push("/boards");
+      } else {
+        toast.success("Success Register");
+        setUsername("");
+        setPassword("");
       }
 
-      setCookie("kerjainaja_session", token, {
-        "path": "/",
-      });
-
-      toast.success("Success Login");
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      router.push("/boards");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -123,21 +134,42 @@ export default function AuthModal({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {type === "register" && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    className="mr-2 text-blue-600"
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className="mr-2 text-blue-600"
+                    />
+                    Nama Lengkap
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Nama Lengkap"
                   />
-                  Nama Lengkap
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    <FontAwesomeIcon
+                      icon={faUser}
+                      className="mr-2 text-blue-600"
+                    />
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Masukkan username"
+                  />
+                </div>
               </div>
             )}
 
@@ -155,6 +187,7 @@ export default function AuthModal({
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Masukkan email"
               />
             </div>
 
@@ -170,6 +203,7 @@ export default function AuthModal({
                 required
                 minLength={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Masukkan Password"
               />
             </div>
 
@@ -192,7 +226,7 @@ export default function AuthModal({
                 Belum punya akun?{" "}
                 <button
                   type="button"
-                  onClick={() => onTypeChange("register")} // Use the prop
+                  onClick={() => onTypeChange("register")}
                   className="text-blue-600 hover:underline"
                 >
                   Daftar disini
@@ -203,7 +237,7 @@ export default function AuthModal({
                 Sudah punya akun?{" "}
                 <button
                   type="button"
-                  onClick={() => onTypeChange("login")} // Use the prop
+                  onClick={() => onTypeChange("login")}
                   className="text-blue-600 hover:underline"
                 >
                   Masuk disini

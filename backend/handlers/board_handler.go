@@ -46,8 +46,6 @@ func CreateBoard() gin.HandlerFunc {
 			Name: req.Name,
 		}
 
-		// TODO: anjing databaseny ga bener kkampret ga ke save ke boards bangsat tai anjing
-
 		if err := database.DB.Create(&board).Error; err != nil {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to create board")
 			return
@@ -162,5 +160,69 @@ func GetBoards() gin.HandlerFunc {
 		}
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, data, "success get boards")
+	}
+}
+
+func LeaveBoard() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		tokenHeader := ctx.Request.Header.Get("Authorization")
+		if tokenHeader == "" {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "token is empty")
+			return
+		}
+
+		id, err := uuid.Parse(ctx.Param("id"))
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "id is not valid")
+			return
+		}
+
+		token := tokenHeader[len("Bearer "):]
+
+		claims, err := helpers.ParseAndValidateToken(token)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "token is not valid")
+			return
+		}
+
+		userIDclaims := claims["sub"].(string)
+
+		userID, err := uuid.Parse(userIDclaims)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "userid is not valid")
+			return
+		}
+
+		var user model.User
+		if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "user is not found")
+			return
+		}
+
+		var board model.Board
+		if err := database.DB.Preload("Members").First(&board, "id = ?", id).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "board is not found")
+			return
+		}
+
+		isJoined := false
+		for _, m := range board.Members {
+			if user.ID == m.ID {
+				isJoined = true
+			}
+		}
+
+		if !isJoined {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "member is not join yet")
+			return
+		}
+
+		if err := database.DB.Model(&board).Association("Members").Delete(&user); err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, err.Error())
+			return
+		}
+
+		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "leave board")
 	}
 }

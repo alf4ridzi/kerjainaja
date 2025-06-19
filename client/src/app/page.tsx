@@ -73,18 +73,18 @@ export default function Home() {
             intuitif dan kolaborasi real-time.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link
-              href="/register"
+            <button
+              onClick={() => toggleAuthModal("register")}
               className="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-lg font-medium transition-colors shadow-md flex items-center justify-center"
             >
               Mulai Gratis
-            </Link>
-            <Link
-              href="/demo"
+            </button>
+            <button
+              onClick={() => toggleAuthModal("login")}
               className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-7 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
             >
-              Lihat Demo
-            </Link>
+              Sudah punya akun?
+            </button>
           </div>
         </div>
 
@@ -176,12 +176,12 @@ export default function Home() {
               Bergabung dengan ratusan tim yang sudah menggunakan KerjainAja
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link
-                href="/register"
+              <button
+                onClick={() => toggleAuthModal("register")}
                 className="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-blue-50 transition shadow-lg"
               >
                 Daftar Sekarang
-              </Link>
+              </button>
               <Link
                 href="/contact"
                 className="border border-white text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-500 transition"
