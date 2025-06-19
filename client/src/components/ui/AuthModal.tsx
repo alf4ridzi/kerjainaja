@@ -9,31 +9,52 @@ import {
   faEnvelope,
   faLock,
 } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { setCookie, getCookie } from "@/server/serverCookies";
 
 type AuthModalProps = {
   isOpen: boolean;
   onClose: () => void;
   type: "login" | "register";
+  onTypeChange: (type: "login" | "register") => void;
 };
 
-export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
+export default function AuthModal({ 
+  isOpen, 
+  onClose, 
+  type,
+  onTypeChange
+}: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    
+    const API = process.env.NEXT_PUBLIC_API_URL;
 
     try {
-      const url = type === "login" ? "/api/auth/login" : "/api/auth/register";
+      const url = type === "login" ? "/login" : "/register";
       const body =
         type === "login" ? { email, password } : { name, email, password };
 
-      const response = await fetch(url, {
+      const tokenHeader = await getCookie("kerjainaja_session");
+
+      const headers: Record<string,string> = {};
+      
+      if (tokenHeader) {
+
+      }
+      
+      const response = await fetch(`${API}${url}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -41,13 +62,28 @@ export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Authentication failed");
+      
+      const data = await response.json();
+
+      if (!response.ok || !data.status) {
+        throw new Error(data.msg || "Authentication failed");
       }
 
-      // Handle successful auth (e.g., redirect or close modal)
-      window.location.reload();
+      const token = data.data?.token;
+
+      if (!token) {
+        toast.error("No token was found");
+        return;
+      }
+
+      setCookie("kerjainaja_session", token, {
+        "path": "/",
+      });
+
+      toast.success("Success Login");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      router.push("/boards");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -61,13 +97,11 @@ export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
       onClose={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      {/* Backdrop pengganti Dialog.Overlay */}
       <div
         className="fixed inset-0 bg-black/30 backdrop-blur-sm"
         aria-hidden="true"
       />
 
-      {/* Dialog Content */}
       <div className="relative bg-white rounded-xl max-w-md w-full mx-auto p-6 shadow-2xl">
         <button
           onClick={onClose}
@@ -134,7 +168,7 @@ export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -158,9 +192,7 @@ export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
                 Belum punya akun?{" "}
                 <button
                   type="button"
-                  onClick={() => {
-                    /* toggle ke register */
-                  }}
+                  onClick={() => onTypeChange("register")} // Use the prop
                   className="text-blue-600 hover:underline"
                 >
                   Daftar disini
@@ -171,9 +203,7 @@ export default function AuthModal({ isOpen, onClose, type }: AuthModalProps) {
                 Sudah punya akun?{" "}
                 <button
                   type="button"
-                  onClick={() => {
-                    /* toggle ke login */
-                  }}
+                  onClick={() => onTypeChange("login")} // Use the prop
                   className="text-blue-600 hover:underline"
                 >
                   Masuk disini

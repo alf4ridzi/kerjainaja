@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
-import AuthModal from '@/components/ui/AuthModal';
+import AuthModal from "@/components/ui/AuthModal";
 
 export default function Home() {
   const [authModal, setAuthModal] = useState<{
@@ -21,7 +21,7 @@ export default function Home() {
 
   const toggleAuthModal = (type: "login" | "register") => {
     setAuthModal({
-      isOpen: !authModal.isOpen || authModal.type !== type,
+      isOpen: true,
       type,
     });
   };
@@ -199,9 +199,10 @@ export default function Home() {
         </div>
       </footer>
       <AuthModal 
-        isOpen={authModal.isOpen} 
+        isOpen={authModal.isOpen}
         onClose={() => setAuthModal({ ...authModal, isOpen: false })}
         type={authModal.type}
+        onTypeChange={(type) => setAuthModal({ ...authModal, type })}
       />
     </div>
   );
