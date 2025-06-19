@@ -46,19 +46,19 @@ export default function AuthModal({
       const body =
         type === "login" ? { email, password } : { name, email, password };
 
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json"
+      };
+
       const tokenHeader = await getCookie("kerjainaja_session");
-
-      const headers: Record<string,string> = {};
-      
+         
       if (tokenHeader) {
-
+        headers["Authorization"] = `Bearer ${tokenHeader}`
       }
       
       const response = await fetch(`${API}${url}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
         body: JSON.stringify(body),
       });
 
