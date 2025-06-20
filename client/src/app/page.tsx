@@ -173,7 +173,7 @@ export default function Home() {
               Siap Meningkatkan Produktivitas Tim?
             </h2>
             <p className="text-xl mb-8 text-blue-100">
-              Bergabung dengan ratusan tim yang sudah menggunakan KerjainAja
+              Bergabung untuk meningkatkan produktivitas menggunakan KerjainAja
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
