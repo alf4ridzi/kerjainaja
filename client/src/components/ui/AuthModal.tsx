@@ -61,7 +61,7 @@ export default function AuthModal({
         }
       }
 
-      console.log(email);
+      // console.log(email);
       const response = await fetch(`${API}${url}`, {
         method: "POST",
         headers: headers,
