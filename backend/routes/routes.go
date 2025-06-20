@@ -41,5 +41,7 @@ func MapRoutes(routes *gin.Engine) {
 		api.DELETE("/cards/:id", handlers.DeleteCard())
 		api.POST("/cards/:id/members", handlers.JoinCard())
 		api.DELETE("/cards/:id/members", handlers.LeaveCard())
+		// event stream
+		api.GET("/event-stream", handlers.HandleEventStream())
 	}
 }

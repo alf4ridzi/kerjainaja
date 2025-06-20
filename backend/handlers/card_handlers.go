@@ -60,9 +60,22 @@ func CreateNewCard() gin.HandlerFunc {
 		}
 
 		if err := database.DB.Create(&newCard).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "unable to make a damn card")
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "unable to make a card")
 			return
 		}
+
+		var card model.Card
+		if err := database.DB.Preload("Members").First(&card, "id = ?", newCard.ID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "card is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(card)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("card_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, newCard, "success create new card")
 	}
@@ -117,6 +130,18 @@ func DeleteCard() gin.HandlerFunc {
 			return
 		}
 
+		var col model.Column
+		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(col)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("column_update", string(jsonBytes))
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success delete a card")
 	}
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -72,8 +72,202 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   }>({ id: null, name: "" });
   const router = useRouter();
   const API = process.env.NEXT_PUBLIC_API_URL;
+  const boardId = params.boardId;
 
   useEffect(() => {
+    const handleBoardUpdate = (e: MessageEvent) => {
+      try {
+        const json = JSON.parse(e.data);
+        if (json.id === params.boardId) {
+          setBoard((prev) => {
+            if (!prev) return null;
+
+            return {
+              ...prev,
+              id: json.id,
+              name: json.name,
+              columns: json.columns,
+              members: json.members || prev.members,
+            };
+          });
+        }
+      } catch (err) {
+        console.error("board update failed : ", err);
+      }
+    };
+
+    const handleCardUpdate = (e: MessageEvent) => {
+      try {
+        const json = JSON.parse(e.data);
+
+        const isValidCard = (
+          data: any
+        ): data is {
+          id: string;
+          title: string;
+          description: string;
+          due_date: string;
+          column_id: string;
+          members: Array<{
+            id: string;
+            name: string;
+            username: string;
+            email: string;
+            role: string;
+            CreatedAt: string;
+            UpdatedAt: string;
+          }>;
+          CreatedAt: string;
+          UpdatedAt: string;
+        } => {
+          return (
+            data &&
+            typeof data.id === "string" &&
+            typeof data.column_id === "string" &&
+            Array.isArray(data.members)
+          );
+        };
+
+        if (!isValidCard(json)) {
+          console.warn("Received invalid card format:", json);
+          return;
+        }
+
+        setBoard((prevBoard) => {
+          if (!prevBoard) return null;
+
+          const updatedCard: Card = {
+            id: json.id,
+            title: json.title,
+            description: json.description,
+            dueDate: json.due_date || undefined,
+            columnId: json.column_id,
+            members: json.members.map((member) => ({
+              id: member.id,
+              name: member.name,
+              email: member.email,
+            })),
+          };
+
+          let columns = prevBoard.columns.map((column) => ({
+            ...column,
+            cards: column.cards.filter((card) => card.id !== updatedCard.id),
+          }));
+
+          columns = columns.map((column) => {
+            if (column.id === updatedCard.columnId) {
+              return {
+                ...column,
+                cards: [...column.cards, updatedCard],
+              };
+            }
+            return column;
+          });
+
+          return {
+            ...prevBoard,
+            columns,
+          };
+        });
+
+        console.log("Card updated successfully:", json.id);
+      } catch (err) {
+        console.error("Failed to process card update:", {
+          error: err,
+          rawData: e.data,
+        });
+
+        toast.error("Failed to update card", {
+          position: "bottom-right",
+          autoClose: 5000,
+        });
+      }
+    };
+
+    const handleColumnUpdate = (e: MessageEvent) => {
+      try {
+        const json = JSON.parse(e.data);
+
+        // Type guard for column update
+        const isColumnUpdate = (
+          data: any
+        ): data is {
+          id: string;
+          name: string;
+          board_id: string;
+          cards: Array<{
+            id: string;
+            title: string;
+            description: string;
+            due_date: string;
+            column_id: string;
+            members: Array<{
+              id: string;
+              name: string;
+              email: string;
+            }>;
+            CreatedAt: string;
+            UpdatedAt: string;
+          }>;
+          CreatedAt: string;
+          UpdatedAt: string;
+        } => {
+          return (
+            data &&
+            typeof data.id === "string" &&
+            typeof data.board_id === "string" &&
+            Array.isArray(data.cards)
+          );
+        };
+
+        if (!isColumnUpdate(json)) {
+          console.warn("Invalid column update format:", json);
+          return;
+        }
+
+        if (json.board_id !== boardId) {
+          return;
+        }
+
+        setBoard((prevBoard) => {
+          if (!prevBoard) return null;
+
+          return {
+            ...prevBoard,
+            columns: prevBoard.columns.map((column) => {
+              if (column.id === json.id) {
+                return {
+                  ...column,
+                  name: json.name,
+                  cards: json.cards.map((card: any) => ({
+                    id: card.id,
+                    title: card.title,
+                    description: card.description,
+                    dueDate: card.due_date || undefined,
+                    columnId: card.column_id,
+                    members: card.members.map((member: any) => ({
+                      id: member.id,
+                      name: member.name,
+                      email: member.email,
+                    })),
+                    createdAt: card.CreatedAt,
+                    updatedAt: card.UpdatedAt,
+                  })),
+                };
+              }
+              return column;
+            }),
+          };
+        });
+      } catch (err) {
+        console.error("Failed to process column update:", {
+          error: err,
+          rawData: e.data,
+        });
+        toast.error("Failed to process update");
+      }
+    };
+
     const fetchBoard = async () => {
       try {
         setIsLoading(true);
@@ -133,6 +327,21 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         } else {
           setCurrentUser(null);
         }
+
+        const eventSource = new EventSource(`${API}/event-stream`);
+
+        eventSource.addEventListener("board_update", handleBoardUpdate);
+        eventSource.addEventListener("card_update", handleCardUpdate);
+        eventSource.addEventListener("column_update", handleColumnUpdate);
+
+        eventSource.onerror = (error) => {
+          console.warn("SSE CONNECTION ERROR ", error);
+          eventSource.close();
+        };
+
+        return () => {
+          eventSource.close();
+        };
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
@@ -142,6 +351,8 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
     fetchBoard();
   }, [params.boardId, API]);
+
+  //const { boardId } = React.use(params);
 
   const handleBackToBoards = () => {
     router.push("/boards");

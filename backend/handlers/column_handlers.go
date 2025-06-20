@@ -41,6 +41,19 @@ func CreateColumn() gin.HandlerFunc {
 			return
 		}
 
+		var column model.Column
+		if err := database.DB.Preload("Cards").First(&column, "id = ?", colum.ID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(column)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("column_update", string(jsonBytes))
+
 		helpers.ResponseJson(ctx, http.StatusOK, true, colum, "success add column!")
 	}
 }
@@ -88,7 +101,7 @@ func EditColumn() gin.HandlerFunc {
 		}
 
 		var col model.Column
-		if err := database.DB.First(&col, "id = ?", parsedID).Error; err != nil {
+		if err := database.DB.Preload("Cards").Preload("Cards.Members").First(&col, "id = ?", parsedID).Error; err != nil {
 			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "column is not found")
 			return
 		}
@@ -99,6 +112,13 @@ func EditColumn() gin.HandlerFunc {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to update : "+err.Error())
 			return
 		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(col)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("column_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success update")
 	}

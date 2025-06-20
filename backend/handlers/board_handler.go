@@ -93,7 +93,6 @@ func GetBoard() gin.HandlerFunc {
 		}
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, data, "success get boards")
-
 	}
 }
 
@@ -143,6 +142,7 @@ func GetBoards() gin.HandlerFunc {
 			return
 		}
 
+		isJoined := true
 		if !slices.ContainsFunc(board.Members, func(m model.User) bool {
 			return m.ID == user.ID
 		}) {
@@ -150,6 +150,7 @@ func GetBoards() gin.HandlerFunc {
 				helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to append user")
 				return
 			}
+			isJoined = false
 		}
 
 		data := model.ResponseBoards{
@@ -157,6 +158,15 @@ func GetBoards() gin.HandlerFunc {
 			Name:    board.Name,
 			Members: board.Members,
 			Columns: board.Columns,
+		}
+
+		if !isJoined {
+			broadcastData, err := helpers.CreateJsonBytes(data)
+			if err != nil {
+				panic(err)
+			}
+
+			BroadcastEventWithType("board_update", string(broadcastData))
 		}
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, data, "success get boards")
@@ -222,6 +232,22 @@ func LeaveBoard() gin.HandlerFunc {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, err.Error())
 			return
 		}
+
+		if err := database.DB.
+			Preload("Members").
+			Preload("Columns.Cards").
+			Preload("Columns.Cards.Members").
+			First(&board, "id = ?", id).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusNotFound, false, nil, "board not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(board)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("board_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "leave board")
 	}
