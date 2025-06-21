@@ -12,6 +12,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
 import AuthModal from "@/components/ui/AuthModal";
+import ToastProvider from "@/providers/toast.provider";
 
 export default function Home() {
   const [authModal, setAuthModal] = useState<{

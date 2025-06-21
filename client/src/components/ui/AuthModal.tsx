@@ -97,6 +97,7 @@ export default function AuthModal({
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+      console.log(err)
     } finally {
       setIsLoading(false);
     }
