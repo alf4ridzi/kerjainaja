@@ -197,6 +197,19 @@ func JoinCard() gin.HandlerFunc {
 			return
 		}
 
+		var col model.Column
+		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(col)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("column_update", string(jsonBytes))
+
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success join")
 
 	}
@@ -257,6 +270,19 @@ func LeaveCard() gin.HandlerFunc {
 			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to leave")
 			return
 		}
+
+		var col model.Column
+		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(col)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("column_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success leave")
 	}

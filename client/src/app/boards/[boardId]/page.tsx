@@ -188,7 +188,6 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       try {
         const json = JSON.parse(e.data);
 
-        // Type guard for column update
         const isColumnUpdate = (
           data: any
         ): data is {
