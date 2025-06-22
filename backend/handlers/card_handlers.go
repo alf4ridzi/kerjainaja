@@ -130,18 +130,17 @@ func DeleteCard() gin.HandlerFunc {
 			return
 		}
 
-		var col model.Column
-		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+		if err := database.DB.Preload("Members").First(&card, "id = ?", parsedcardid).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "card is not found")
 			return
 		}
 
-		jsonBytes, err := helpers.CreateJsonBytes(col)
+		jsonBytes, err := helpers.CreateJsonBytes(card)
 		if err != nil {
 			panic(err)
 		}
 
-		BroadcastEventWithType("column_update", string(jsonBytes))
+		BroadcastEventWithType("card_update", string(jsonBytes))
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success delete a card")
 	}
 }
@@ -197,18 +196,17 @@ func JoinCard() gin.HandlerFunc {
 			return
 		}
 
-		var col model.Column
-		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+		if err := database.DB.Preload("Members").First(&card, "id = ?", parsedcardid).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "card is not found")
 			return
 		}
 
-		jsonBytes, err := helpers.CreateJsonBytes(col)
+		jsonBytes, err := helpers.CreateJsonBytes(card)
 		if err != nil {
 			panic(err)
 		}
 
-		BroadcastEventWithType("column_update", string(jsonBytes))
+		BroadcastEventWithType("card_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success join")
 
@@ -271,18 +269,17 @@ func LeaveCard() gin.HandlerFunc {
 			return
 		}
 
-		var col model.Column
-		if err := database.DB.Preload("Cards").Preload("Cards.Members").Find(&col).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "column is not found")
+		if err := database.DB.Preload("Members").First(&card, "id = ?", parsedcardid).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "card is not found")
 			return
 		}
 
-		jsonBytes, err := helpers.CreateJsonBytes(col)
+		jsonBytes, err := helpers.CreateJsonBytes(card)
 		if err != nil {
 			panic(err)
 		}
 
-		BroadcastEventWithType("column_update", string(jsonBytes))
+		BroadcastEventWithType("card_update", string(jsonBytes))
 
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success leave")
 	}
