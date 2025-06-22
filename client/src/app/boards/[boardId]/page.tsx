@@ -184,11 +184,33 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       }
     };
 
+    const handleCardDeleted = (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data)
+
+        setBoard((prevBoard) => {
+          if (!prevBoard) return null;
+
+          const columns = prevBoard.columns.map(column => ({
+            ...column,
+            cards: column.cards.filter(card => card.id !== data.id)
+          }));
+
+          return {
+            ...prevBoard,
+            columns
+          }
+        })
+
+      } catch (err) {
+        console.error("error card deleted : ", err)
+      }
+    }
+
     const handleColumnUpdate = (e: MessageEvent) => {
       try {
         const json = JSON.parse(e.data);
 
-        // Type guard untuk validasi struktur data
         const isColumnUpdateResponse = (
           data: any
         ): data is {
@@ -357,7 +379,8 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         eventSource.addEventListener("board_update", handleBoardUpdate);
         eventSource.addEventListener("card_update", handleCardUpdate);
         eventSource.addEventListener("column_update", handleColumnUpdate);
-
+        eventSource.addEventListener("card_deleted", handleCardDeleted);
+        
         eventSource.onerror = (error) => {
           console.warn("SSE CONNECTION ERROR ", error);
           eventSource.close();

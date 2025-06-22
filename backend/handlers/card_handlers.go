@@ -130,17 +130,13 @@ func DeleteCard() gin.HandlerFunc {
 			return
 		}
 
-		if err := database.DB.Preload("Members").First(&card, "id = ?", parsedcardid).Error; err != nil {
-			helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "card is not found")
-			return
-		}
-
 		jsonBytes, err := helpers.CreateJsonBytes(card)
 		if err != nil {
 			panic(err)
 		}
 
-		BroadcastEventWithType("card_update", string(jsonBytes))
+		BroadcastEventWithType("card_deleted", string(jsonBytes))
+
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success delete a card")
 	}
 }
