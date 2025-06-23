@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -57,7 +57,7 @@ type ApiResponse = {
   status: boolean;
 };
 
-export default function BoardPage({ params }: { params: { boardId: string } }) {
+export default function BoardPage({ params }: { params: Promise<{ boardId: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,13 +73,13 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   }>({ id: null, name: "" });
   const router = useRouter();
   const API = process.env.NEXT_PUBLIC_API_URL;
-  const boardId = params.boardId;
+  const { boardId } = use(params);
 
   useEffect(() => {
     const handleBoardUpdate = (e: MessageEvent) => {
       try {
         const json = JSON.parse(e.data);
-        if (json.id === params.boardId) {
+        if (json.id === boardId) {
           setBoard((prev) => {
             if (!prev) return null;
 
@@ -115,11 +115,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
             username: string;
             email: string;
             role: string;
-            CreatedAt: string;
-            UpdatedAt: string;
           }>;
-          CreatedAt: string;
-          UpdatedAt: string;
         } => {
           return (
             data &&
@@ -210,13 +206,108 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
     const handleColumnUpdate = (e: MessageEvent) => {
       try {
-        const json = JSON.parse(e.data)
+        const json = JSON.parse(e.data);
+
+        // Type guard remains the same
+        const isColumnUpdate = (
+          data: any
+        ): data is {
+          id: string;
+          name: string;
+          board_id: string;
+          cards: Array<{
+            id: string;
+            title: string;
+            description: string;
+            due_date: string;
+            column_id: string;
+            members: Array<{
+              id: string;
+              name: string;
+              email: string;
+              username?: string;
+              role?: string;
+            }>;
+          }>;
+        } => {
+          return (
+            data &&
+            typeof data.id === "string" &&
+            typeof data.name === "string" &&
+            typeof data.board_id === "string" &&
+            Array.isArray(data.cards)
+          );
+        };
+
+        if (!isColumnUpdate(json)) {
+          console.warn("Invalid column update format:", json);
+          return;
+        }
 
         if (json.board_id !== boardId) {
           return;
-        } 
+        }
 
+        setBoard((prevBoard) => {
+          if (!prevBoard) return null;
 
+          const columnExists = prevBoard.columns.some(col => col.id === json.id);
+
+          if (columnExists) {
+            // Update existing column
+            return {
+              ...prevBoard,
+              columns: prevBoard.columns.map((column) => {
+                if (column.id === json.id) {
+                  return {
+                    ...column,
+                    name: json.name,
+                    cards: json.cards.map((card: any) => ({
+                      id: card.id,
+                      title: card.title,
+                      description: card.description,
+                      dueDate: card.due_date || undefined,
+                      columnId: card.column_id,
+                      members: card.members?.map((member: any) => ({
+                        id: member.id,
+                        name: member.name,
+                        email: member.email,
+                        username: member.username,
+                        role: member.role
+                      })) || [],
+                    })),
+                  };
+                }
+                return column;
+              }),
+            };
+          } else {
+            const newColumn: Column = {
+              id: json.id,
+              name: json.name,
+              boardid: json.board_id,
+              cards: json.cards.map((card: any) => ({
+                id: card.id,
+                title: card.title,
+                description: card.description,
+                dueDate: card.due_date || undefined,
+                columnId: card.column_id,
+                members: card.members?.map((member: any) => ({
+                  id: member.id,
+                  name: member.name,
+                  email: member.email,
+                  username: member.username,
+                  role: member.role
+                })) || [],
+              })),
+            };
+
+            return {
+              ...prevBoard,
+              columns: [...prevBoard.columns, newColumn]
+            };
+          }
+        });
       } catch (err) {
         console.error("Failed to process column update:", {
           error: err,
@@ -239,7 +330,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           headers.append("Authorization", `Bearer ${token}`);
         }
 
-        const response = await fetch(`${API}/boards/${params.boardId}`, {
+        const response = await fetch(`${API}/boards/${boardId}`, {
           headers,
         });
 
@@ -300,7 +391,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         eventSource.addEventListener("card_update", handleCardUpdate);
         eventSource.addEventListener("column_update", handleColumnUpdate);
         eventSource.addEventListener("card_deleted", handleCardDeleted);
-        
+
         eventSource.onerror = (error) => {
           console.warn("SSE CONNECTION ERROR ", error);
           eventSource.close();
@@ -317,7 +408,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
     };
 
     fetchBoard();
-  }, [params.boardId, API]);
+  }, [boardId, API]);
 
   //const { boardId } = React.use(params);
 
@@ -329,7 +420,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
   const handleLeaveBoard = async () => {
     try {
       const token = await getCookie("kerjainaja_session");
-      const response = await fetch(`${API}/boards/${params.boardId}/members`, {
+      const response = await fetch(`${API}/boards/${boardId}/members`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -431,7 +522,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         },
         body: JSON.stringify({
           name: "New Column",
-          board_id: `${params.boardId}`,
+          board_id: `${boardId}`,
         }),
         credentials: "include",
       });
@@ -775,11 +866,10 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
               {board.members.map((member) => (
                 <span
                   key={member.id}
-                  className={`text-xs px-2.5 py-1 rounded-full ${
-                    member.id === currentUser?.id
-                      ? "bg-blue-50 text-blue-600"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
+                  className={`text-xs px-2.5 py-1 rounded-full ${member.id === currentUser?.id
+                    ? "bg-blue-50 text-blue-600"
+                    : "bg-gray-100 text-gray-600"
+                    }`}
                 >
                   {member.name}
                 </span>
@@ -839,11 +929,10 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
           {board.members.map((member) => (
             <span
               key={member.id}
-              className={`ml-2 text-xs px-2 py-1 rounded-full ${
-                member.id === currentUser?.id
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              className={`ml-2 text-xs px-2 py-1 rounded-full ${member.id === currentUser?.id
+                ? "bg-blue-100 text-blue-800"
+                : "bg-gray-200 text-gray-700"
+                }`}
             >
               {member.name}
             </span>
@@ -873,7 +962,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex flex-col md:flex-row md:overflow-x-auto space-y-4 md:space-y-0 md:space-x-4 pb-4">
           {board.columns.map((column) => (
-            <Droppable key={column.id} droppableId={column.id}>
+            <Droppable key={column.id} droppableId={column.id} isDropDisabled={false}>
               {(provided) => {
                 const cardsEndRef = useRef<HTMLDivElement>(null);
 
@@ -977,11 +1066,10 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                                   {card.members.map((member) => (
                                     <span
                                       key={member.id}
-                                      className={`text-xs px-2 py-1 rounded-full ${
-                                        member.id === currentUser?.id
-                                          ? "bg-blue-100 text-blue-800"
-                                          : "bg-gray-100 text-gray-700"
-                                      }`}
+                                      className={`text-xs px-2 py-1 rounded-full ${member.id === currentUser?.id
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-gray-100 text-gray-700"
+                                        }`}
                                     >
                                       {member.name.split(" ")[0]}
                                     </span>
@@ -989,13 +1077,12 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
                                 </div>
                                 <button
                                   onClick={() => handleJoinCard(card.id)}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    card.members.some(
-                                      (m) => m.id === currentUser?.id
-                                    )
-                                      ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                      : "bg-green-100 text-green-700 hover:bg-green-200"
-                                  }`}
+                                  className={`text-xs px-2 py-1 rounded ${card.members.some(
+                                    (m) => m.id === currentUser?.id
+                                  )
+                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                                    }`}
                                   disabled={!currentUser}
                                 >
                                   {card.members.some(
