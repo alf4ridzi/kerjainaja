@@ -32,15 +32,20 @@ type Card = {
   id: string;
   title: string;
   description: string;
+  dueDate?: string;
   columnId: string;
   members: User[];
-  dueDate?: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 };
 
 type Column = {
   id: string;
   name: string;
+  boardid: string;
   cards: Card[];
+  CreatedAt: string;
+  UpdatedAt: string;
 };
 
 type Board = {
@@ -48,6 +53,8 @@ type Board = {
   name: string;
   columns: Column[];
   members: User[];
+  CreatedAt: string;
+  UpdatedAt: string;
 };
 
 type ApiResponse = {
@@ -209,102 +216,13 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
 
     const handleColumnUpdate = (e: MessageEvent) => {
       try {
-        const json = JSON.parse(e.data);
+        const json = JSON.parse(e.data)
 
-        const isColumnUpdateResponse = (
-          data: any
-        ): data is {
-          data: Array<{
-            id: string;
-            name: string;
-            board_id: string;
-            cards: Array<{
-              id: string;
-              title: string;
-              description: string;
-              due_date: string;
-              column_id: string;
-              members: Array<{
-                id: string;
-                name: string;
-                username: string;
-                email: string;
-                role: string;
-                CreatedAt: string;
-                UpdatedAt: string;
-              }>;
-              CreatedAt: string;
-              UpdatedAt: string;
-            }>;
-            CreatedAt: string;
-            UpdatedAt: string;
-          }>;
-        } => {
-          return (
-            data &&
-            Array.isArray(data.data) &&
-            data.data.every(
-              (col) =>
-                typeof col.id === "string" &&
-                typeof col.name === "string" &&
-                typeof col.board_id === "string" &&
-                Array.isArray(col.cards)
-            )
-          );
-        };
-
-        if (!isColumnUpdateResponse(json)) {
-          console.warn("Invalid column update format:", json);
+        if (json.board_id !== boardId) {
           return;
-        }
+        } 
 
-        setBoard((prevBoard) => {
-          if (!prevBoard) return null;
 
-          const updatedColumnsMap = new Map<string, any>();
-
-          json.data.forEach((column) => {
-            if (column.board_id !== boardId) return;
-
-            updatedColumnsMap.set(column.id, {
-              id: column.id,
-              name: column.name,
-              cards: column.cards.map((card) => ({
-                id: card.id,
-                title: card.title,
-                description: card.description,
-                dueDate: card.due_date || undefined,
-                columnId: card.column_id,
-                members: card.members.map((member) => ({
-                  id: member.id,
-                  name: member.name,
-                  email: member.email,
-                  username: member.username,
-                  role: member.role,
-                })),
-                createdAt: card.CreatedAt,
-                updatedAt: card.UpdatedAt,
-              })),
-              createdAt: column.CreatedAt,
-              updatedAt: column.UpdatedAt,
-            });
-          });
-
-          const updatedColumns = prevBoard.columns.map((column) =>
-            updatedColumnsMap.has(column.id)
-              ? updatedColumnsMap.get(column.id)
-              : column
-          );
-
-          const newColumns = Array.from(updatedColumnsMap.values()).filter(
-            (column) => !prevBoard.columns.some((c) => c.id === column.id)
-          );
-
-          return {
-            ...prevBoard,
-            columns: [...updatedColumns, ...newColumns],
-          };
-        });
       } catch (err) {
         console.error("Failed to process column update:", {
           error: err,
