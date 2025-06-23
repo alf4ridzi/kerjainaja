@@ -84,6 +84,12 @@ export default function BoardsForm() {
         const data = await response.json();
 
         if (!response.ok || !data.status) {
+          if (response.status == 401) {
+            toast.error("Access Denied");
+            router.push("/");
+            return;
+          }
+          
           throw new Error(data.msg || "Failed to fetch boards");
         }
 

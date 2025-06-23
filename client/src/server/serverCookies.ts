@@ -23,7 +23,7 @@ export async function setCookie(
         name,
         value,
         path: options?.path ?? "/",
-        maxAge: options?.maxAge ?? 60 * 15, // default 15 menit
+        maxAge: options?.maxAge ?? 60 * 60 * 24,
         secure: process.env.NODE_ENV === 'production',
         httpOnly: process.env.NODE_ENV === 'production',
         sameSite: options?.sameSite ?? "lax",

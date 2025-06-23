@@ -35,8 +35,6 @@ type Card = {
   dueDate?: string;
   columnId: string;
   members: User[];
-  CreatedAt: string;
-  UpdatedAt: string;
 };
 
 type Column = {
@@ -44,8 +42,6 @@ type Column = {
   name: string;
   boardid: string;
   cards: Card[];
-  CreatedAt: string;
-  UpdatedAt: string;
 };
 
 type Board = {
@@ -53,8 +49,6 @@ type Board = {
   name: string;
   columns: Column[];
   members: User[];
-  CreatedAt: string;
-  UpdatedAt: string;
 };
 
 type ApiResponse = {
@@ -248,9 +242,16 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
         const response = await fetch(`${API}/boards/${params.boardId}`, {
           headers,
         });
+
         const data: ApiResponse = await response.json();
 
         if (!response.ok || !data.status || !data.data) {
+          if (response.status == 401) {
+            toast.error("Access Denied");
+            router.push("/");
+            return;
+          }
+
           throw new Error(data.msg || "Failed to fetch board");
         }
 
@@ -261,6 +262,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
             data.data.columns?.map((col) => ({
               id: col.id,
               name: col.name || "Unnamed Column",
+              boardid: col.boardid,
               cards:
                 col.cards?.map((card) => ({
                   id: card.id,
@@ -464,6 +466,7 @@ export default function BoardPage({ params }: { params: { boardId: string } }) {
       const newColumn: Column = {
         id: result.data.id,
         name: result.data.name,
+        boardid: result.data.board_id,
         cards: [],
       };
 
