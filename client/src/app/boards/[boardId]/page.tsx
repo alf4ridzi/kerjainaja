@@ -57,7 +57,11 @@ type ApiResponse = {
   status: boolean;
 };
 
-export default function BoardPage({ params }: { params: Promise<{ boardId: string }> }) {
+export default function BoardPage({
+  params,
+}: {
+  params: Promise<{ boardId: string }>;
+}) {
   const [board, setBoard] = useState<Board | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,11 +87,22 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
           setBoard((prev) => {
             if (!prev) return null;
 
+            const cleanColumns = json.columns.map((column: any) => ({
+              ...column,
+              cards: column.cards.map((card: any) => ({
+                ...card,
+                members: card.members.filter(
+                  (member: any, index: number, self: any[]) =>
+                    index === self.findIndex((m) => m.id === member.id)
+                ),
+              })),
+            }));
+
             return {
               ...prev,
               id: json.id,
               name: json.name,
-              columns: json.columns,
+              columns: cleanColumns,
               members: json.members || prev.members,
             };
           });
@@ -183,26 +198,25 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
 
     const handleCardDeleted = (e: MessageEvent) => {
       try {
-        const data = JSON.parse(e.data)
+        const data = JSON.parse(e.data);
 
         setBoard((prevBoard) => {
           if (!prevBoard) return null;
 
-          const columns = prevBoard.columns.map(column => ({
+          const columns = prevBoard.columns.map((column) => ({
             ...column,
-            cards: column.cards.filter(card => card.id !== data.id)
+            cards: column.cards.filter((card) => card.id !== data.id),
           }));
 
           return {
             ...prevBoard,
-            columns
-          }
-        })
-
+            columns,
+          };
+        });
       } catch (err) {
-        console.error("error card deleted : ", err)
+        console.error("error card deleted : ", err);
       }
-    }
+    };
 
     const handleColumnUpdate = (e: MessageEvent) => {
       try {
@@ -251,7 +265,9 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
         setBoard((prevBoard) => {
           if (!prevBoard) return null;
 
-          const columnExists = prevBoard.columns.some(col => col.id === json.id);
+          const columnExists = prevBoard.columns.some(
+            (col) => col.id === json.id
+          );
 
           if (columnExists) {
             // Update existing column
@@ -268,13 +284,14 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
                       description: card.description,
                       dueDate: card.due_date || undefined,
                       columnId: card.column_id,
-                      members: card.members?.map((member: any) => ({
-                        id: member.id,
-                        name: member.name,
-                        email: member.email,
-                        username: member.username,
-                        role: member.role
-                      })) || [],
+                      members:
+                        card.members?.map((member: any) => ({
+                          id: member.id,
+                          name: member.name,
+                          email: member.email,
+                          username: member.username,
+                          role: member.role,
+                        })) || [],
                     })),
                   };
                 }
@@ -292,19 +309,20 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
                 description: card.description,
                 dueDate: card.due_date || undefined,
                 columnId: card.column_id,
-                members: card.members?.map((member: any) => ({
-                  id: member.id,
-                  name: member.name,
-                  email: member.email,
-                  username: member.username,
-                  role: member.role
-                })) || [],
+                members:
+                  card.members?.map((member: any) => ({
+                    id: member.id,
+                    name: member.name,
+                    email: member.email,
+                    username: member.username,
+                    role: member.role,
+                  })) || [],
               })),
             };
 
             return {
               ...prevBoard,
-              columns: [...prevBoard.columns, newColumn]
+              columns: [...prevBoard.columns, newColumn],
             };
           }
         });
@@ -724,26 +742,26 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
         return;
       }
 
-      setBoard((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          columns: prev.columns.map((column) => ({
-            ...column,
-            cards: column.cards.map((card) => {
-              if (card.id === cardId) {
-                return {
-                  ...card,
-                  members: isMember
-                    ? card.members.filter((m) => m.id !== currentUser.id)
-                    : [...card.members, currentUser],
-                };
-              }
-              return card;
-            }),
-          })),
-        };
-      });
+      // setBoard((prev) => {
+      //   if (!prev) return null;
+      //   return {
+      //     ...prev,
+      //     columns: prev.columns.map((column) => ({
+      //       ...column,
+      //       cards: column.cards.map((card) => {
+      //         if (card.id === cardId) {
+      //           return {
+      //             ...card,
+      //             members: isMember
+      //               ? card.members.filter((m) => m.id !== currentUser.id)
+      //               : [...card.members, currentUser],
+      //           };
+      //         }
+      //         return card;
+      //       }),
+      //     })),
+      //   };
+      // });
     } catch (error) {
       toast.error("Failed to update membership");
       console.error(error);
@@ -866,10 +884,11 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
               {board.members.map((member) => (
                 <span
                   key={member.id}
-                  className={`text-xs px-2.5 py-1 rounded-full ${member.id === currentUser?.id
-                    ? "bg-blue-50 text-blue-600"
-                    : "bg-gray-100 text-gray-600"
-                    }`}
+                  className={`text-xs px-2.5 py-1 rounded-full ${
+                    member.id === currentUser?.id
+                      ? "bg-blue-50 text-blue-600"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
                 >
                   {member.name}
                 </span>
@@ -929,10 +948,11 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
           {board.members.map((member) => (
             <span
               key={member.id}
-              className={`ml-2 text-xs px-2 py-1 rounded-full ${member.id === currentUser?.id
-                ? "bg-blue-100 text-blue-800"
-                : "bg-gray-200 text-gray-700"
-                }`}
+              className={`ml-2 text-xs px-2 py-1 rounded-full ${
+                member.id === currentUser?.id
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-gray-200 text-gray-700"
+              }`}
             >
               {member.name}
             </span>
@@ -962,7 +982,11 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex flex-col md:flex-row md:overflow-x-auto space-y-4 md:space-y-0 md:space-x-4 pb-4">
           {board.columns.map((column) => (
-            <Droppable key={column.id} droppableId={column.id} isDropDisabled={false}>
+            <Droppable
+              key={column.id}
+              droppableId={column.id}
+              isDropDisabled={false}
+            >
               {(provided) => {
                 const cardsEndRef = useRef<HTMLDivElement>(null);
 
@@ -1066,10 +1090,11 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
                                   {card.members.map((member) => (
                                     <span
                                       key={member.id}
-                                      className={`text-xs px-2 py-1 rounded-full ${member.id === currentUser?.id
-                                        ? "bg-blue-100 text-blue-800"
-                                        : "bg-gray-100 text-gray-700"
-                                        }`}
+                                      className={`text-xs px-2 py-1 rounded-full ${
+                                        member.id === currentUser?.id
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-gray-100 text-gray-700"
+                                      }`}
                                     >
                                       {member.name.split(" ")[0]}
                                     </span>
@@ -1077,12 +1102,13 @@ export default function BoardPage({ params }: { params: Promise<{ boardId: strin
                                 </div>
                                 <button
                                   onClick={() => handleJoinCard(card.id)}
-                                  className={`text-xs px-2 py-1 rounded ${card.members.some(
-                                    (m) => m.id === currentUser?.id
-                                  )
-                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                    : "bg-green-100 text-green-700 hover:bg-green-200"
-                                    }`}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    card.members.some(
+                                      (m) => m.id === currentUser?.id
+                                    )
+                                      ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                      : "bg-green-100 text-green-700 hover:bg-green-200"
+                                  }`}
                                   disabled={!currentUser}
                                 >
                                   {card.members.some(
