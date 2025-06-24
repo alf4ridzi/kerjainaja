@@ -123,3 +123,81 @@ func EditColumn() gin.HandlerFunc {
 		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success update")
 	}
 }
+
+func DeleteColumn() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		tokenHeader := ctx.Request.Header.Get("Authorization")
+		if tokenHeader == "" {
+			helpers.ResponseJson(ctx, http.StatusUnauthorized, false, nil, "token is not found")
+			return
+		}
+
+		token := tokenHeader[len("Bearer "):]
+
+		claim, err := helpers.ParseAndValidateToken(token)
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, err.Error())
+			return
+		}
+
+		userID := claim["sub"]
+
+		var user model.User
+		if err := database.DB.First(&user, "id = ?", userID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "user is not found")
+			return
+		}
+
+		columnid, err := uuid.Parse(ctx.Param("id"))
+		if err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "column id is not valid")
+			return
+		}
+
+		var column model.Column
+		if err := database.DB.First(&column, "id = ?", columnid).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "column is not found!")
+			return
+		}
+
+		// delete all cards
+		var cards []model.Card
+		if err := database.DB.Model(&column).Association("Cards").Find(&cards); err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "failed get cards")
+			return
+		}
+
+		for _, card := range cards {
+			if err := database.DB.Model(&card).Association("Members").Clear(); err != nil {
+				helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "failed to delete members card")
+				return
+			}
+
+			if err := database.DB.Unscoped().Delete(&card).Error; err != nil {
+				helpers.ResponseJson(ctx, http.StatusInternalServerError, false, nil, "failed to delete cards")
+				return
+			}
+		}
+
+		if err := database.DB.Delete(&column, "id = ?", columnid).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "error delete column")
+			return
+		}
+
+		var board model.Board
+		if err := database.DB.Preload("Members").Preload("Columns").Preload("Columns.Cards").Preload("Columns.Cards.Members").First(&board, "id = ?", column.BoardID).Error; err != nil {
+			helpers.ResponseJson(ctx, http.StatusBadRequest, false, nil, "board is not found")
+			return
+		}
+
+		jsonBytes, err := helpers.CreateJsonBytes(board)
+		if err != nil {
+			panic(err)
+		}
+
+		BroadcastEventWithType("board_update", string(jsonBytes))
+
+		helpers.ResponseJson(ctx, http.StatusOK, true, nil, "success delete a column")
+
+	}
+}

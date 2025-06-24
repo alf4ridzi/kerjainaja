@@ -36,6 +36,7 @@ func MapRoutes(routes *gin.Engine) {
 		// column
 		api.POST("/column", handlers.CreateColumn())
 		api.PUT("/column/:id", handlers.EditColumn())
+		api.DELETE("/column/:id", handlers.DeleteColumn())
 		// cards
 		api.POST("/cards", handlers.CreateNewCard())
 		api.DELETE("/cards/:id", handlers.DeleteCard())

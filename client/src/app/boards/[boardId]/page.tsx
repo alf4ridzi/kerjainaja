@@ -531,7 +531,6 @@ export default function BoardPage({
 
   const handleRemoveColumn = async (columnId: string) => {
     try {
-      // Optimistic UI update
       setBoard((prev) => {
         if (!prev) return null;
         return {
@@ -540,12 +539,17 @@ export default function BoardPage({
         };
       });
 
-      // API call to delete column
-      const response = await fetch(`${API}/columns/${columnId}`, {
+      const token = await getCookie("kerjainaja_session")
+      if (!token) {
+        toast.error("no token was found");
+        return;
+      }
+
+      const response = await fetch(`${API}/column/${columnId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -554,12 +558,11 @@ export default function BoardPage({
       }
 
       toast.success("Column deleted successfully");
-      setEditingColumn({ id: null, name: "" }); // Reset editing state
+      setEditingColumn({ id: null, name: "" });
     } catch (error) {
       console.error("Error deleting column:", error);
       toast.error("Failed to delete column");
-      // Revert optimistic update
-      setBoard((prev) => prev); // This will trigger a re-render with original data
+      setBoard((prev) => prev); 
     }
   };
 
@@ -1042,7 +1045,7 @@ export default function BoardPage({
                   >
                     <div className="flex justify-between items-center mb-3">
                       {editingColumn.id === column.id ? (
-                        <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-1 flex-1">
                           <input
                             type="text"
                             value={editingColumn.name}
@@ -1052,7 +1055,7 @@ export default function BoardPage({
                                 name: e.target.value,
                               })
                             }
-                            className="flex-1 px-2 py-1 border-b border-gray-300 focus:outline-none focus:border-blue-500"
+                            className="w-full px-2 py-1 border-b border-gray-300 focus:outline-none focus:border-blue-500"
                             autoFocus
                           />
                           <button
