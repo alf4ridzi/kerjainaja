@@ -14,6 +14,7 @@ import {
   faTimes,
   faSignOutAlt,
   faArrowLeft,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -528,6 +529,40 @@ export default function BoardPage({
     });
   };
 
+  const handleRemoveColumn = async (columnId: string) => {
+    try {
+      // Optimistic UI update
+      setBoard((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          columns: prev.columns.filter((col) => col.id !== columnId),
+        };
+      });
+
+      // API call to delete column
+      const response = await fetch(`${API}/columns/${columnId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete column");
+      }
+
+      toast.success("Column deleted successfully");
+      setEditingColumn({ id: null, name: "" }); // Reset editing state
+    } catch (error) {
+      console.error("Error deleting column:", error);
+      toast.error("Failed to delete column");
+      // Revert optimistic update
+      setBoard((prev) => prev); // This will trigger a re-render with original data
+    }
+  };
+
   const handleAddNewColumn = async () => {
     if (!board) return;
 
@@ -986,6 +1021,10 @@ export default function BoardPage({
               key={column.id}
               droppableId={column.id}
               isDropDisabled={false}
+              isCombineEnabled={false}
+              ignoreContainerClipping={false}
+              direction="horizontal"
+              type="COLUMN"
             >
               {(provided) => {
                 const cardsEndRef = useRef<HTMLDivElement>(null);
@@ -1019,8 +1058,20 @@ export default function BoardPage({
                           <button
                             onClick={handleSaveEdit}
                             className="text-green-500 hover:text-green-700 transition-colors"
+                            aria-label="Save changes"
                           >
                             <FontAwesomeIcon icon={faCheck} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (editingColumn.id) {
+                                handleRemoveColumn(editingColumn.id);
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                            aria-label="Remove column"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
                           </button>
                         </div>
                       ) : (
