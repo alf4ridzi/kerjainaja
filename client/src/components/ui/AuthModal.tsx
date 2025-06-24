@@ -53,9 +53,10 @@ export default function AuthModal({
         "Content-Type": "application/json",
       };
 
-      if (type == "login") {
-        const tokenHeader = await getCookie("kerjainaja_session");
+      const tokenHeader = await getCookie("kerjainaja_session");
 
+      if (type == "login") {
+        
         if (tokenHeader) {
           headers["Authorization"] = `Bearer ${tokenHeader}`;
         }
@@ -75,6 +76,13 @@ export default function AuthModal({
       }
 
       if (type == "login") {
+
+        if (tokenHeader) {
+          toast.success("sudah login!");
+          router.push("/boards")
+          return;
+        }
+
         const token = data.data?.token;
 
         if (!token) {
