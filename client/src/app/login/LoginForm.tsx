@@ -36,6 +36,11 @@ export default function LoginForm() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      // ngrok deploy testing
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       headers["Content-Type"] = "application/json";
 
       const response = await fetch(`${API}/login`, {

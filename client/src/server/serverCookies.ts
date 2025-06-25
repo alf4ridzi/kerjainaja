@@ -26,6 +26,6 @@ export async function setCookie(
         maxAge: options?.maxAge ?? 60 * 60 * 24,
         secure: process.env.NODE_ENV === 'production',
         httpOnly: process.env.NODE_ENV === 'production',
-        sameSite: options?.sameSite ?? "lax",
+        sameSite: options?.sameSite ?? "none",
     });
 }

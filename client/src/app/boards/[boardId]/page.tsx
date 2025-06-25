@@ -349,6 +349,11 @@ export default function BoardPage({
           headers.append("Authorization", `Bearer ${token}`);
         }
 
+        // ngrok deploy testing
+        if (process.env.NODE_ENV !== "production") {
+          headers.append("ngrok-skip-browser-warning", "wkwkwkw");
+        }
+
         const response = await fetch(`${API}/boards/${boardId}`, {
           headers,
         });
@@ -439,12 +444,19 @@ export default function BoardPage({
   const handleLeaveBoard = async () => {
     try {
       const token = await getCookie("kerjainaja_session");
+
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+      
       const response = await fetch(`${API}/boards/${boardId}/members`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: headers,
       });
 
       if (response.ok) {
@@ -539,18 +551,24 @@ export default function BoardPage({
         };
       });
 
-      const token = await getCookie("kerjainaja_session")
+      const token = await getCookie("kerjainaja_session");
       if (!token) {
         toast.error("no token was found");
         return;
       }
 
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/column/${columnId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: headers,
       });
 
       if (!response.ok) {
@@ -562,7 +580,7 @@ export default function BoardPage({
     } catch (error) {
       console.error("Error deleting column:", error);
       toast.error("Failed to delete column");
-      setBoard((prev) => prev); 
+      setBoard((prev) => prev);
     }
   };
 
@@ -571,11 +589,20 @@ export default function BoardPage({
 
     try {
       setIsLoading(true);
+      const token = await getCookie("kerjainaja_session");
+
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/column`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
         body: JSON.stringify({
           name: "New Column",
           board_id: `${boardId}`,
@@ -654,6 +681,10 @@ export default function BoardPage({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/column/${editingColumn.id}`, {
         headers: headers,
         method: "PUT",
@@ -713,6 +744,10 @@ export default function BoardPage({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/cards/${cardId}`, {
         headers: headers,
         method: "DELETE",
@@ -765,12 +800,18 @@ export default function BoardPage({
         )
       );
 
+      const headers: Record<string,string> = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/cards/${cardId}/members`, {
         method: isMember ? "DELETE" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: headers,
       });
 
       const result = await response.json();
@@ -823,6 +864,10 @@ export default function BoardPage({
       const token = await getCookie("kerjainaja_session");
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
       }
 
       const body: Record<string, string> = {

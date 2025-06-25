@@ -62,6 +62,10 @@ export default function AuthModal({
         }
       }
 
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       // console.log(email);
       const response = await fetch(`${API}${url}`, {
         method: "POST",

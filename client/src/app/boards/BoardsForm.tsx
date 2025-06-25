@@ -9,14 +9,14 @@ import {
   faPlus,
   faSpinner,
   faArrowRight,
-  faLink
+  faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Metadata } from "next";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { redirect, useRouter } from "next/navigation";
-import Modal from '@/components/ui/modal'; // You'll need a Modal component
+import Modal from "@/components/ui/modal"; // You'll need a Modal component
 
 export const metadata: Metadata = {
   title: "Boards",
@@ -61,7 +61,7 @@ export default function BoardsForm() {
   useEffect(() => {
     const fetchBoards = async () => {
       try {
-        await new Promise(f => setTimeout(f, 1200));
+        await new Promise((f) => setTimeout(f, 1200));
 
         setIsLoading(true);
         setLoading(true);
@@ -71,6 +71,11 @@ export default function BoardsForm() {
 
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        // ngrok deploy testing
+        if (process.env.NODE_ENV !== "production") {
+          headers["ngrok-skip-browser-warning"] = "blabla";
         }
 
         headers["Content-Type"] = "application/json";
@@ -89,7 +94,7 @@ export default function BoardsForm() {
             router.push("/");
             return;
           }
-          
+
           throw new Error(data.msg || "Failed to fetch boards");
         }
 
@@ -117,6 +122,11 @@ export default function BoardsForm() {
         Authorization: `Bearer ${token}`,
       };
 
+      // ngrok deploy testing
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
+
       const response = await fetch(`${API}/users`, {
         headers: headers,
         method: "GET",
@@ -134,17 +144,17 @@ export default function BoardsForm() {
     fetchUser();
   }, []);
 
-  const [boardId, setBoardId] = useState('');
+  const [boardId, setBoardId] = useState("");
 
   const handleJoinBoard = () => {
     if (!boardId.trim()) {
-      toast.error('Please enter a valid board ID');
+      toast.error("Please enter a valid board ID");
       return;
     }
     router.push(`/boards/${boardId.trim()}`);
   };
 
-  const handleLogout = async() => {
+  const handleLogout = async () => {
     try {
       setIsLoading(true);
       const token = await getCookie("kerjainaja_session");
@@ -153,10 +163,15 @@ export default function BoardsForm() {
         return;
       }
 
-      const headers: Record<string,string> = {
+      const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${token}`,
       };
+
+      // ngrok deploy testing
+      if (process.env.NODE_ENV !== 'production'){
+        headers["ngrok-skip-browser-warning"] = "blabla";
+      }
 
       const response = await fetch(`${API}/logout`, {
         headers: headers,
@@ -174,13 +189,12 @@ export default function BoardsForm() {
       toast.success("success logout");
 
       router.push("/");
-
     } catch (err) {
       console.log(err);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const handleCreateBoard = async () => {
     try {
@@ -293,7 +307,7 @@ export default function BoardsForm() {
           <p className="text-gray-600 mb-8">
             No boards found. Create your first board!
           </p>
-  
+
           {isCreating ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -352,7 +366,7 @@ export default function BoardsForm() {
                 <FontAwesomeIcon icon={faPlus} />
                 Create Board
               </motion.button>
-  
+
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -364,11 +378,13 @@ export default function BoardsForm() {
               </motion.button>
             </div>
           )}
-  
+
           {/* Join Board Modal */}
           <Modal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)}>
             <div className="p-6">
-              <h3 className="text-xl font-semibold mb-4">Join Existing Board</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Join Existing Board
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -408,72 +424,72 @@ export default function BoardsForm() {
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">{currentUser?.name} Boards</h1>
-        <div className="flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleLogout}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-          >
-            <FontAwesomeIcon icon={faSignOutAlt} />
-            Logout
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowJoinModal(true)}
-            className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-          >
-            <FontAwesomeIcon icon={faLink} />
-            Join Board
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsCreating(true)}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <FontAwesomeIcon icon={faPlus} />
-            New Board
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Join Board Modal */}
-      <Modal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)}>
-        <div className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Join Existing Board</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Board ID
-              </label>
-              <input
-                type="text"
-                value={boardId}
-                onChange={(e) => setBoardId(e.target.value)}
-                placeholder="Paste board ID here"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowJoinModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleJoinBoard}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md"
-              >
-                Join
-              </button>
-            </div>
+          <h1 className="text-3xl font-bold">{currentUser?.name} Boards</h1>
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} />
+              Logout
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowJoinModal(true)}
+              className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon={faLink} />
+              Join Board
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsCreating(true)}
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              New Board
+            </motion.button>
           </div>
         </div>
-      </Modal>
+
+        {/* Join Board Modal */}
+        <Modal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)}>
+          <div className="p-6">
+            <h3 className="text-xl font-semibold mb-4">Join Existing Board</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Board ID
+                </label>
+                <input
+                  type="text"
+                  value={boardId}
+                  onChange={(e) => setBoardId(e.target.value)}
+                  placeholder="Paste board ID here"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowJoinModal(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleJoinBoard}
+                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md"
+                >
+                  Join
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
 
         {isCreating && (
           <motion.div
