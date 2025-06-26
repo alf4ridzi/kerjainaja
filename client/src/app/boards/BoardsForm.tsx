@@ -173,7 +173,7 @@ export default function BoardsForm() {
         headers["ngrok-skip-browser-warning"] = "blabla";
       }
 
-      const response = await fetch(`${API}/logout`, {
+      const response = await fetch(`/api/auth/logout`, {
         headers: headers,
         credentials: "include",
         method: "POST",
