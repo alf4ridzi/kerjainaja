@@ -408,7 +408,7 @@ export default function BoardPage({
         } else {
           setCurrentUser(null);
         }
-
+        
         const eventSource = new EventSource(`${API}/event-stream`);
 
         eventSource.addEventListener("board_update", handleBoardUpdate);

@@ -24,6 +24,8 @@ func HandleEventStream() gin.HandlerFunc {
 		ctx.Writer.Header().Set("Cache-Control", "no-cache")
 		ctx.Writer.Header().Set("Connection", "keep-alive")
 		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		ctx.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		ctx.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
 
 		client := &SSEClient{
 			ctx:  ctx,
