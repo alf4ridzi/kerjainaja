@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kerjainaja/config"
 	"kerjainaja/database"
 	"kerjainaja/routes"
 
@@ -8,6 +9,12 @@ import (
 )
 
 func main() {
+	appenv := config.Env("APP_ENV")
+
+	if appenv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	database.InitDB()
 
 	r := gin.Default()

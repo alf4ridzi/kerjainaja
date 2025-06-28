@@ -8,8 +8,8 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { setCookie, getCookie } from "@/server/serverCookies";
 import Link from "next/link";
 //import { useRouter } from "next/router";
-import { Redirect } from "next";
 import { redirect } from "next/navigation";
+import React from "react";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");

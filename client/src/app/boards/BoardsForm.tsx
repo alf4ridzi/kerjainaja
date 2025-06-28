@@ -16,7 +16,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { Metadata } from "next";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { redirect, useRouter } from "next/navigation";
-import Modal from "@/components/ui/modal"; // You'll need a Modal component
+import Modal from "@/components/ui/modal";
+import React from "react";
 
 export const metadata: Metadata = {
   title: "Boards",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, use } from "react";
+import React from "react";
 import {
   DragDropContext,
   Droppable,
@@ -21,7 +22,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { getCookie } from "@/server/serverCookies";
 import { useRouter } from "next/navigation";
 
-// Types
 type User = {
   id: string;
   name: string;

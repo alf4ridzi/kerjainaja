@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { setCookie, getCookie } from "@/server/serverCookies";
+import React from "react";
 
 type AuthModalProps = {
   isOpen: boolean;
