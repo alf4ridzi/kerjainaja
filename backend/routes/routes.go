@@ -11,7 +11,7 @@ import (
 
 func MapRoutes(routes *gin.Engine) {
 	routes.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://identifying-madness-uzbekistan-carbon.trycloudflare.com"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://tgp-blocked-quantitative-tagged.trycloudflare.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "ngrok-skip-browser-warning"},
 		ExposeHeaders:    []string{"Content-Length"},

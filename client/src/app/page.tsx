@@ -89,21 +89,6 @@ export default function Home() {
             </button>
           </div>
         </div>
-
-        <div className="mt-16 max-w-5xl mx-auto">
-          <div className="relative rounded-xl shadow-2xl overflow-hidden border border-blue-100">
-            <div className="absolute top-0 left-0 right-0 h-10 bg-blue-50 flex items-center px-4 space-x-2">
-              <div className="w-3 h-3 rounded-full bg-red-400"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-              <div className="w-3 h-3 rounded-full bg-green-400"></div>
-            </div>
-            <img
-              src="/screenshot-app.png"
-              alt="Tampilan Modern KerjainAja"
-              className="w-full h-auto mt-10"
-            />
-          </div>
-        </div>
       </section>
 
       <section className="bg-white py-20">
@@ -167,7 +152,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modern CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-20 text-white">
         <div className="container mx-auto px-6 text-center">
           <div className="max-w-3xl mx-auto">
@@ -195,8 +179,8 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-blue-900 text-white py-10">
-        <div className="border-t border-blue-800 mt-12 pt-8 text-center text-blue-400 text-sm">
+      <footer className="bg-blue-900 text-white py-5">
+        <div className="text-center text-blue-400 text-sm">
           © {new Date().getFullYear()} KerjainAja. By Muhammad Alfaridzi.
         </div>
       </footer>
